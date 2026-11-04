@@ -136,12 +136,25 @@ jobs:
           for LIB in os/android/app/src/main/jniLibs/arm64-v8a/*.so; do
             readelf -h "$LIB" | grep -q "AArch64"
           done
+          echo "APK archive contents:"
+          unzip -l "$APK_PATH"
+          APK_LIST="$(mktemp)"
+          unzip -Z1 "$APK_PATH" > "$APK_LIST"
+          for LIB in libmain.so librexruntime.so libSDL3.so libliberty_install.so libvulkan.so; do
+            grep -Fxq "lib/arm64-v8a/$LIB" "$APK_LIST" || {
+              echo "Missing required native library inside APK: $LIB"
+              exit 1
+            }
+          done
+          sha256sum "$APK_PATH" | tee apk-sha256.txt
 
       - name: Upload Android APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: gta4-universal-debug-apk
-          path: os/android/app/build/outputs/apk/debug/app-debug.apk
+          path: |
+            os/android/app/build/outputs/apk/debug/app-debug.apk
+            apk-sha256.txt
           if-no-files-found: error
 
       - name: Create versioned GitHub Release and attach APK
