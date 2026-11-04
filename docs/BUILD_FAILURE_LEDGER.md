@@ -41,3 +41,13 @@ This file records confirmed build failures, their root causes, fixes, and checks
 ## Release tracking
 
 Use monotonically increasing tags such as `android-v0.1.0`, `android-v0.1.1`, and `android-v0.2.0`. Never reuse a tag for different contents. Every release should state the source commit, build status, APK SHA-256, known limitations, and whether the APK has been tested on physical hardware.
+
+\n## BL-004 — First physical-device gameplay test terminated by Android low-memory manager\n
+- **First observed:** 2026-11-04 on Samsung Galaxy A14 5G (4 GB RAM, Mali-G57).\n
+- **Build under test:** Android ARM64 workflow run 41849386440, commit `783db3c2efc546e689bf0fcad4f592f2bf7c7378`.\n
+- **Observed sequence:** Rockstar startup screens appeared, Nico loading screen appeared, gameplay loaded quickly, gameplay was severely choppy, then Android killed the game process.\n
+- **Crash report:** `com.xhyn.ivrecomp:game`; reason `killed by the system: low memory`; RSS approximately 1,293 MB at termination. PSS was reported as 0 MB at exit and is not interpreted as peak usage.\n
+- **Root cause:** Not yet established. Candidate areas include game asset streaming, host-side texture/buffer caches, Vulkan allocations, shader/pipeline compilation, and other native allocations. RSS alone cannot identify the subsystem responsible.\n
+- **Baseline rule:** Preserve the current default graphics settings for controlled comparison. Do not claim that lowering resolution or texture quality fixes the underlying issue without measurements.\n
+- **Next diagnostic pass:** Capture native memory samples across launch, loading, and a repeatable gameplay route; compare process RSS with renderer host categories and Vulkan heap telemetry; inspect frame-time distribution and shader compilation stalls. Use bounded profiler capture settings to avoid materially increasing memory pressure.\n
+- **Status:** Open; first gameplay milestone achieved, performance and memory stability not achieved.\n
