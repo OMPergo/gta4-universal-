@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/LibertyRecomp
     ${CMAKE_CURRENT_SOURCE_DIR}/LibertyRecomp/diagnostics
     ${CMAKE_CURRENT_SOURCE_DIR}/LibertyRecomp/gpu
@@ -13,13 +14,27 @@ include_directories(
 )
 
 # Core library
-add_library(LibertyUniversalCore STATIC
+set(LIBERTY_CORE_SOURCES
+    LibertyRecomp/universal_runtime.cpp
     LibertyRecomp/diagnostics/hardware_capability.cpp
     LibertyRecomp/diagnostics/performance_tiers.cpp
     LibertyRecomp/gpu/gpu_compatibility.cpp
     LibertyRecomp/network/authoritative_session.cpp
     installer/media_id_validator.cpp
 )
+
+if(ANDROID)
+    find_package(JNI REQUIRED)
+    include_directories(${JNI_INCLUDE_DIRS})
+    list(APPEND LIBERTY_CORE_SOURCES LibertyRecomp/jni/universal_jni_bridge.cpp)
+
+    # Build shared library for Android packaging
+    add_library(LibertyUniversalCore SHARED ${LIBERTY_CORE_SOURCES})
+    target_link_libraries(LibertyUniversalCore PRIVATE log android)
+else()
+    # Build static library for host unit tests
+    add_library(LibertyUniversalCore STATIC ${LIBERTY_CORE_SOURCES})
+endif()
 
 # Find Vulkan if available
 find_package(Vulkan QUIET)

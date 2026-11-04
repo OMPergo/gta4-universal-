@@ -40,7 +40,7 @@ jobs:
           cmake --build build-host
           ctest --test-dir build-host --output-on-failure
 
-      - name: Configure and Build Android ARM64 Native Library
+      - name: Configure and Build Android ARM64 Shared Library
         run: |
           export ANDROID_NDK_HOME="${ANDROID_SDK_ROOT}/ndk/27.0.12077973"
           cmake -B build-android-arm64 \
@@ -50,11 +50,13 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release
           cmake --build build-android-arm64 --target LibertyUniversalCore
 
-      - name: Stage Native Libraries for Android Packaging
+      - name: Stage Native Libraries into Android jniLibs
         run: |
           mkdir -p os/android/app/src/main/jniLibs/arm64-v8a
           export ANDROID_NDK_HOME="${ANDROID_SDK_ROOT}/ndk/27.0.12077973"
-          if [ -f "build-android-arm64/libLibertyUniversalCore.a" ]; then
+          if [ -f "build-android-arm64/libLibertyUniversalCore.so" ]; then
+            cp build-android-arm64/libLibertyUniversalCore.so os/android/app/src/main/jniLibs/arm64-v8a/
+          elif [ -f "build-android-arm64/libLibertyUniversalCore.a" ]; then
             cp build-android-arm64/libLibertyUniversalCore.a os/android/app/src/main/jniLibs/arm64-v8a/
           fi
           find "${ANDROID_NDK_HOME}" -name "libc++_shared.so" | grep "aarch64" | head -n 1 | xargs -I {} cp {} os/android/app/src/main/jniLibs/arm64-v8a/ || true
@@ -65,7 +67,7 @@ jobs:
           chmod +x ./gradlew
           ./gradlew assembleDebug
 
-      - name: Verify Android APK Output
+      - name: Verify Android APK Output & ARM64 Native Libraries
         run: |
           APK_PATH="os/android/app/build/outputs/apk/debug/app-debug.apk"
           test -f "$APK_PATH"
