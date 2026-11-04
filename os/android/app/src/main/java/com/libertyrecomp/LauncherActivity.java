@@ -243,7 +243,7 @@ public class LauncherActivity extends Activity {
         block.addView(buildCrashCard(),matchWrap(dp(3)));
         mLastLaunch=ModernUi.text(this,"",12,0xffffb7a3);block.addView(mLastLaunch,matchWrap(dp(2)));
         block.addView(ModernUi.text(this,"LIBERTY CITY IS WAITING",12,ModernUi.ACCENT));
-        TextView brand=ModernUi.text(this,"XHYN IV",38,ModernUi.TEXT);brand.setTypeface(Typeface.create("sans-serif-condensed",Typeface.BOLD));block.addView(brand,matchWrap(dp(8)));
+        TextView brand=ModernUi.text(this,"GTA IV UNIVERSAL",32,ModernUi.TEXT);brand.setTypeface(Typeface.create("sans-serif-condensed",Typeface.BOLD));block.addView(brand,matchWrap(dp(8)));
         mLaunchSummary=ModernUi.text(this,launchSummary(),12,ModernUi.MUTED);block.addView(mLaunchSummary,matchWrap(dp(7)));
         mStatus=ModernUi.text(this,"Checking game files…",12,ModernUi.MUTED);LinearLayout.LayoutParams statusGap=matchWrap(dp(5));statusGap.bottomMargin=dp(22);block.addView(mStatus,statusGap);
         mPlay=ModernUi.icon(this,"Play","play",true);mPlay.setTextSize(19);mPlay.setOnClickListener(v->play(false));LinearLayout playRow=new LinearLayout(this);playRow.addView(mPlay,new LinearLayout.LayoutParams(0,dp(50),1));Button overflow=ModernUi.button(this,"⋯",false);overflow.setTextSize(24);overflow.setContentDescription("More actions");LinearLayout.LayoutParams overflowSize=new LinearLayout.LayoutParams(dp(48),dp(50));overflowSize.leftMargin=dp(8);playRow.addView(overflow,overflowSize);overflow.setOnClickListener(v->showLogs());block.addView(playRow);
@@ -321,7 +321,7 @@ public class LauncherActivity extends Activity {
         TextView latest=ModernUi.text(this,"",12,ModernUi.MUTED);latest.setPadding(0,dp(12),0,dp(4));panel.addView(latest);
         LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.VERTICAL);panel.addView(actions);
         Button share=ModernUi.gridAction(this,actions,"Share report",this::exportLatestLog);
-        ModernUi.gridAction(this,actions,"Copy details",()->{android.content.ClipboardManager clipboard=(android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE);if(clipboard!=null)clipboard.setPrimaryClip(android.content.ClipData.newPlainText("XHYN IV",versionLine()+"\n"+Build.MODEL+" · Android "+Build.VERSION.RELEASE+"\n"+launchSummary()+"\n"+latest.getText()));toast("Details copied.");});
+        ModernUi.gridAction(this,actions,"Copy details",()->{android.content.ClipboardManager clipboard=(android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE);if(clipboard!=null)clipboard.setPrimaryClip(android.content.ClipData.newPlainText("GTA IV UNIVERSAL",versionLine()+"\n"+Build.MODEL+" · Android "+Build.VERSION.RELEASE+"\n"+launchSummary()+"\n"+latest.getText()));toast("Details copied.");});
         Runnable refresh=()->{String[] reports=DebugLogArchive.sessions(mDataRoot,getFilesDir());boolean crash=LauncherCrashReport.available(mDataRoot);latest.setText(reports.length==0?(crash?"A launcher crash report is available.":"No saved report yet."):"Latest report: "+reports[0]+(gameRunning()?" · recording":""));share.setEnabled(reports.length>0||crash);};
         ModernUi.gridAction(this,actions,"Delete report",()->{
             if(gameRunning()){toast("Quit the game before deleting its report.");return;}
