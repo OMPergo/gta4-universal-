@@ -50,20 +50,19 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release
           cmake --build build-android-arm64 --target LibertyUniversalCore
 
-      - name: Assemble Android APK
+      - name: Execute Android Gradle Assembly if Project Staged
         run: |
           if [ -d "os/android" ] && [ -f "os/android/gradlew" ]; then
             cd os/android
             chmod +x ./gradlew
             ./gradlew assembleDebug
           else
-            echo "::notice ::Standalone Android application project (os/android) is not staged in this branch; APK assembly skipped."
+            echo "Notice: Full os/android Gradle harness is not present in this build tree; native ARM64 library compilation completed."
           fi
 
-      - name: Upload Android APK Artifact
-        if: always()
+      - name: Upload Android ARM64 Native Library
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug-apk
-          path: os/android/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: ignore
+          name: libLibertyUniversalCore-arm64
+          path: build-android-arm64/libLibertyUniversalCore.a
+          if-no-files-found: error
