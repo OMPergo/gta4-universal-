@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  build-windows:
-    name: Windows MSVC / Clang Build
+  build-windows-x64:
+    name: Windows x86-64 MSVC Build
     runs-on: windows-2022
     steps:
       - name: Checkout Repository
@@ -19,17 +19,34 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Setup MSVC
+      - name: Setup MSVC (x64)
         uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
 
-      - name: Compile and Run Unit Tests
+      - name: Build and Test via CMake
+        shell: cmd
         run: |
-          cl /std:c++20 /EHsc /W4 /I LibertyRecomp\diagnostics /I LibertyRecomp\gpu /I LibertyRecomp\network /I installer ^
-            LibertyRecomp\diagnostics\hardware_capability.cpp ^
-            LibertyRecomp\diagnostics\performance_tiers.cpp ^
-            LibertyRecomp\gpu\gpu_compatibility.cpp ^
-            LibertyRecomp\network\authoritative_session.cpp ^
-            installer\media_id_validator.cpp ^
-            tests\unit\test_hardware_capability.cpp ^
-            /Fe:test_windows.exe
-          .\test_windows.exe
+          cmake -B build-x64 -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-x64 --config Release
+          ctest --test-dir build-x64 -C Release --output-on-failure
+
+  build-windows-arm64:
+    name: Windows ARM64 MSVC Cross-Build
+    runs-on: windows-2022
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup MSVC (ARM64 Cross)
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64_arm64
+
+      - name: Build Core Library for Windows ARM64
+        shell: cmd
+        run: |
+          cmake -B build-arm64 -DCMAKE_BUILD_TYPE=Release -A ARM64
+          cmake --build build-arm64 --config Release --target LibertyUniversalCore
