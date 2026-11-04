@@ -3,11 +3,28 @@
 #include "../../LibertyRecomp/gpu/gpu_compatibility.h"
 #include "../../LibertyRecomp/network/authoritative_session.h"
 #include "../../installer/media_id_validator.h"
+#include "../../LibertyRecomp/universal_runtime.h"
 
 #include <iostream>
 #include <cassert>
 
 using namespace LibertyRecomp;
+
+void TestEngineExecutionLifecycle() {
+  UniversalRuntime& runtime = UniversalRuntime::GetInstance();
+  assert(runtime.Initialize("/tmp/test_gta4_runtime") == true);
+  const auto& status = runtime.GetStatus();
+  assert(status.state == RuntimeInitState::GameDataNotFound);
+  assert(status.status_message.find("Legally obtained GTA IV") != std::string::npos);
+
+  // Test execution state transition
+  assert(runtime.StartEngineExecution() == true);
+  assert(runtime.GetStatus().state == RuntimeInitState::GameCodeExecuting);
+  assert(runtime.GetStatus().is_game_code_executing == true);
+  runtime.Shutdown();
+  assert(runtime.GetStatus().state == RuntimeInitState::Uninitialized);
+  std::cout << "[PASS] Engine Execution Lifecycle & Game Data Verification" << std::endl;
+}
 
 int main() {
   std::cout << "========================================" << std::endl;
@@ -56,8 +73,11 @@ int main() {
   assert(alt_res.status == Installer::MediaIdValidationStatus::AlternativeLegitimateMediaIdPendingTU8);
   std::cout << "[PASS] Media ID Validator (USA 6AC07221 & Alt 06759S9C handled)" << std::endl;
 
+  // 6. Engine Execution Lifecycle
+  TestEngineExecutionLifecycle();
+
   std::cout << "========================================" << std::endl;
-  std::cout << "ALL 5 SUBSYSTEM TEST SUITES PASSED (100% SUCCESS)" << std::endl;
+  std::cout << "ALL 6 SUBSYSTEM TEST SUITES PASSED (100% SUCCESS)" << std::endl;
   std::cout << "========================================" << std::endl;
   return 0;
 }

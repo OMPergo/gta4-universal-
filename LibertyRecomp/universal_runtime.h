@@ -19,7 +19,8 @@ enum class RuntimeInitState {
   VulkanInitialized,
   GameDataNotFound,
   GameDataValidated,
-  RuntimeRunning,
+  EngineInitializing,
+  GameCodeExecuting,
   FatalError
 };
 
@@ -31,6 +32,8 @@ struct RuntimeStatus {
   std::string game_data_directory;
   std::string status_message;
   std::string last_error_message;
+  bool is_engine_ready = false;
+  bool is_game_code_executing = false;
 };
 
 class UniversalRuntime {
@@ -40,6 +43,7 @@ public:
   bool Initialize(const std::string& storage_path);
   bool VerifyGameData(const std::string& path);
   bool AttemptVulkanInitialization();
+  bool StartEngineExecution();
   void Shutdown();
 
   const RuntimeStatus& GetStatus() const { return status_; }
