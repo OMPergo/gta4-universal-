@@ -16,6 +16,7 @@ namespace LibertyRecomp {
 enum class RuntimeInitState {
   Uninitialized = 0,
   HardwareProbed,
+  VulkanCapabilityDetected,
   VulkanInitialized,
   GameDataNotFound,
   GameDataValidated,
