@@ -1,0 +1,37 @@
+name: Apple iOS & iPadOS Build
+
+on:
+  push:
+    branches: [main, "jules-*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-ios:
+    name: iOS Simulator & Metal Target Build
+    runs-on: macos-14
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app
+
+      - name: Build & Run Native Host Tests
+        run: |
+          cmake -B build-host -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-host
+          ctest --test-dir build-host --output-on-failure
+
+      - name: Configure and Build iOS Simulator Target
+        run: |
+          cmake -B build-ios -G Xcode \
+            -DCMAKE_SYSTEM_NAME=iOS \
+            -DCMAKE_OSX_SYSROOT=iphonesimulator \
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
+          cmake --build build-ios --config Release --target LibertyUniversalCore

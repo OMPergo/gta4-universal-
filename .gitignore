@@ -1,0 +1,16 @@
+build/
+out/
+bin/
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+*.log
+.DS_Store
+*.apk
+*.ipa
+tests/unit/test_*
+!tests/unit/test_*.cpp
+!tests/unit/test_*.py

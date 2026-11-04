@@ -1,0 +1,37 @@
+name: Android ARM64 Build & Validation
+
+on:
+  push:
+    branches: [main, "jules-*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-android:
+    name: Android ARM64 Tests & Validation
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK & NDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools;platforms;android-35;build-tools;35.0.0;ndk;27.0.12077973'
+
+      - name: Configure and Build CMake Test Suite
+        run: |
+          cmake -B build-host -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-host --target run_all_tests
+          ctest --test-dir build-host --output-on-failure
