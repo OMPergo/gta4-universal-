@@ -7,11 +7,11 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-android:
-    name: Android ARM64 Native & Host Validation
+    name: Android ARM64 Native & APK Assembly
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout Repository
@@ -50,19 +50,44 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release
           cmake --build build-android-arm64 --target LibertyUniversalCore
 
-      - name: Execute Android Gradle Assembly if Project Staged
+      - name: Stage Native Libraries for Android Packaging
         run: |
-          if [ -d "os/android" ] && [ -f "os/android/gradlew" ]; then
-            cd os/android
-            chmod +x ./gradlew
-            ./gradlew assembleDebug
-          else
-            echo "Notice: Full os/android Gradle harness is not present in this build tree; native ARM64 library compilation completed."
+          mkdir -p os/android/app/src/main/jniLibs/arm64-v8a
+          export ANDROID_NDK_HOME="${ANDROID_SDK_ROOT}/ndk/27.0.12077973"
+          if [ -f "build-android-arm64/libLibertyUniversalCore.a" ]; then
+            cp build-android-arm64/libLibertyUniversalCore.a os/android/app/src/main/jniLibs/arm64-v8a/
           fi
+          find "${ANDROID_NDK_HOME}" -name "libc++_shared.so" | grep "aarch64" | head -n 1 | xargs -I {} cp {} os/android/app/src/main/jniLibs/arm64-v8a/ || true
 
-      - name: Upload Android ARM64 Native Library
+      - name: Execute Android Gradle Assembly
+        working-directory: os/android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleDebug
+
+      - name: Verify Android APK Output
+        run: |
+          APK_PATH="os/android/app/build/outputs/apk/debug/app-debug.apk"
+          test -f "$APK_PATH"
+          FILE_SIZE=$(wc -c < "$APK_PATH")
+          echo "SUCCESS: Found $APK_PATH with size $FILE_SIZE bytes"
+          test "$FILE_SIZE" -gt 100000
+
+      - name: Upload Android APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: libLibertyUniversalCore-arm64
-          path: build-android-arm64/libLibertyUniversalCore.a
+          name: gta4-universal-debug-apk
+          path: os/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Create GitHub Release and Attach APK
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/jules-')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_NAME="v0.5.9.3-universal-alpha"
+          APK_PATH="os/android/app/build/outputs/apk/debug/app-debug.apk"
+          gh release view "$TAG_NAME" || gh release create "$TAG_NAME" "$APK_PATH" \
+            --title "GTA IV Universal $TAG_NAME" \
+            --notes "Automated CI Release for GTA IV Universal on Android ARM64." \
+            --latest || gh release upload "$TAG_NAME" "$APK_PATH" --clobber || true
