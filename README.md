@@ -7,10 +7,16 @@ A unified, native, cross-platform Grand Theft Auto IV recompilation project usin
 ## GTA IV Universal — Android Download
 
 ### Latest Release
-- **Status:** In Active Development / Build Milestone Phase 2A
+- **Release Version:** [v0.5.9.3-universal-alpha](https://github.com/OMPergo/gta4-universal-/releases/latest)
+- **Direct APK Download:** [Download GTA IV Universal Android APK](https://github.com/OMPergo/gta4-universal-/releases/latest/download/app-debug.apk)
 - **Target Architecture:** Android ARM64 (`arm64-v8a`)
 - **Minimum Target:** Android 10+ (API 29+), Vulkan 1.1+ support. Specifically engineered to support entry-level devices such as the **Samsung Galaxy A14 5G** (Dimensity 700, Mali-G57 MC2, 4 GB RAM) via 540p dynamic resolution scaling and FSR1.
-- **Download Link:** [Download Latest Android APK](https://github.com/OMPergo/gta4-universal-/releases/latest) *(Note: Official APK releases will be published as GitHub Release assets once native recompilation staging passes CI).*
+- **Build Status:** Android ARM64 application module and JNI runtime bridge verified in GitHub Actions CI.
+
+### Forensic APK Audit & Runtime Status
+For detailed forensic analysis explaining the composition of the Android build and comparing the 2.4 MB build against upstream's 67 MB bundled release, see:
+- [Complete Project Forensic Audit & APK Analysis Report](docs/PROJECT_FORENSIC_AUDIT_REPORT.md)
+- [PowerPC Recompilation & Execution Roadmap](docs/RECOMPILATION_INTEGRATION_ANALYSIS.md)
 
 ### Installation & Game Data Requirements
 1. **Legally Obtained Game Data**: GTA IV Universal does **not** include any copyrighted game assets, executables, or title updates. Users must supply their own legitimate Xbox 360 GTA IV USA disc image (Media ID: `6AC07221`) and Title Update 8 (0.0.8.5).
@@ -29,13 +35,14 @@ A unified, native, cross-platform Grand Theft Auto IV recompilation project usin
 - **Game Data Integrity**: Rigorous validation of legal Xbox 360 disc dumps (USA Retail `6AC07221`) and identification of alternative disc revisions (`0675959C` / `06759S9C`).
 
 For detailed documentation, see the `docs/` directory:
-- [Architecture](docs/ARCHITECTURE.md)
+- [Forensic Project & APK Audit](docs/PROJECT_FORENSIC_AUDIT_REPORT.md)
+- [PowerPC Recompilation Architecture](docs/RECOMPILATION_INTEGRATION_ANALYSIS.md)
+- [Architecture Overview](docs/ARCHITECTURE.md)
 - [Device Compatibility](docs/DEVICE_COMPATIBILITY.md)
 - [Performance Engineering](docs/PERFORMANCE.md)
 - [Multiplayer Design](docs/MULTIPLAYER.md)
 - [Building for Android](docs/BUILDING_ANDROID.md)
 - [Building for iOS](docs/BUILDING_IOS.md)
-- [Android APK Pipeline Audit](docs/ANDROID_APK_ANALYSIS.md)
 - [Third-Party Research](docs/THIRD_PARTY_RESEARCH.md)
 - [Third-Party Licenses](docs/THIRD_PARTY_LICENSES.md)
 - [Implementation Status](docs/IMPLEMENTATION_STATUS.md)
