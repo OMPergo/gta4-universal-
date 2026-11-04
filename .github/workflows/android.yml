@@ -163,6 +163,7 @@ jobs:
           sha256sum "$APK_PATH" | tee apk-sha256.txt
 
       - name: Upload Android APK Artifact
+        id: upload-apk
         uses: actions/upload-artifact@v4
         with:
           name: gta4-universal-debug-apk
@@ -170,6 +171,19 @@ jobs:
             os/android/app/build/outputs/apk/debug/app-debug.apk
             apk-sha256.txt
           if-no-files-found: error
+
+      - name: Put direct APK artifact link at the top of the build summary
+        if: success()
+        env:
+          APK_ARTIFACT_URL: ${{ steps.upload-apk.outputs.artifact-url }}
+        run: |
+          {
+            echo "# GTA IV Universal — APK ready"
+            echo ""
+            echo "**[Open/download the APK artifact]($APK_ARTIFACT_URL)**"
+            echo ""
+            echo "The artifact contains app-debug.apk and apk-sha256.txt."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create versioned GitHub Release and attach APK
         if: startsWith(github.ref, 'refs/tags/android-v')
