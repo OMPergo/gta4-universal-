@@ -13,6 +13,7 @@ jobs:
   build-android:
     name: Android ARM64 Native & APK Assembly
     runs-on: ubuntu-24.04
+    timeout-minutes: 180
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -44,9 +45,30 @@ jobs:
         with:
           packages: platform-tools
 
-      - name: Install Android SDK Packages via sdkmanager
+      - name: Install Android SDK Packages and native build tools
         run: |
-          yes | sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'ndk;27.0.12077973'
+          sudo apt-get update
+          sudo apt-get install -y ninja-build python3 python3-pip rsync
+          yes | sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'ndk;27.0.12077973' 'ndk;29.0.14206865'
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/29.0.14206865" >> "$GITHUB_ENV"
+
+      - name: Initialize only the Android runtime dependency submodules
+        run: |
+          git -C vendor/XHYN-IV-recomp submodule update --init --recursive glue/rexglue-sdk-main/thirdparty
+
+      - name: Build the real XHYN / ReXGlue GTA IV Android runtime
+        run: |
+          bash vendor/XHYN-IV-recomp/os/android/scripts/build_native.sh 2
+          test -f vendor/XHYN-IV-recomp/os/android/app/src/main/jniLibs/arm64-v8a/libmain.so
+          test -f vendor/XHYN-IV-recomp/os/android/app/src/main/jniLibs/arm64-v8a/librexruntime.so
+
+      - name: Stage real runtime libraries and resources into Universal app
+        run: |
+          mkdir -p os/android/app/src/main/jniLibs/arm64-v8a os/android/app/src/main/assets/Resources
+          cp vendor/XHYN-IV-recomp/os/android/app/src/main/jniLibs/arm64-v8a/*.so os/android/app/src/main/jniLibs/arm64-v8a/
+          cp -a vendor/XHYN-IV-recomp/os/android/app/src/main/assets/Resources/. os/android/app/src/main/assets/Resources/
+          test -f os/android/app/src/main/jniLibs/arm64-v8a/libmain.so
+          test -f os/android/app/src/main/jniLibs/arm64-v8a/librexruntime.so
 
       - name: Configure and Build Host Test Suite
         run: |
@@ -86,12 +108,16 @@ jobs:
           APK_PATH="os/android/app/build/outputs/apk/debug/app-debug.apk"
           test -f "$APK_PATH"
           test -f "os/android/app/src/main/jniLibs/arm64-v8a/libLibertyUniversalCore.so"
+          test -f "os/android/app/src/main/jniLibs/arm64-v8a/libmain.so"
+          test -f "os/android/app/src/main/jniLibs/arm64-v8a/librexruntime.so"
+          test -f "os/android/app/src/main/jniLibs/arm64-v8a/libSDL3.so"
           FILE_SIZE=$(wc -c < "$APK_PATH")
           echo "APK size: $FILE_SIZE bytes"
           test "$FILE_SIZE" -gt 100000
           test "$FILE_SIZE" -le 104857600
-          file "os/android/app/src/main/jniLibs/arm64-v8a/libLibertyUniversalCore.so"
-          readelf -h "os/android/app/src/main/jniLibs/arm64-v8a/libLibertyUniversalCore.so" | grep -q "AArch64"
+          for LIB in os/android/app/src/main/jniLibs/arm64-v8a/*.so; do
+            readelf -h "$LIB" | grep -q "AArch64"
+          done
 
       - name: Upload Android APK Artifact
         uses: actions/upload-artifact@v4

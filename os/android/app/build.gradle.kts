@@ -3,14 +3,14 @@ plugins {
 }
 
 val sdlJavaCustom = rootProject.file("sdl3-java")
-val sdlJavaUpstream = rootProject.file("../../glue/rexglue-sdk-main/thirdparty/sdl3/android-project/app/src/main/java")
-val sdlJavaDir = if (sdlJavaCustom.exists()) sdlJavaCustom else sdlJavaUpstream
+val sdlJavaUpstream = rootProject.file("../../vendor/XHYN-IV-recomp/glue/rexglue-sdk-main/thirdparty/sdl3/android-project/app/src/main/java")
+val sdlJavaDir = if (sdlJavaUpstream.exists()) sdlJavaUpstream else sdlJavaCustom
 
 android {
     namespace   = "com.libertyrecomp"
     compileSdk  = 35
     buildToolsVersion = "35.0.0"
-    ndkVersion  = "27.0.12077973"
+    ndkVersion  = "29.0.14206865"
 
     defaultConfig {
         applicationId = "com.xhyn.ivrecomp"
