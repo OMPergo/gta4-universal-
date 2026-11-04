@@ -17,7 +17,21 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: true
+
+      - name: Restore pinned XHYN R2 Android sources and assets
+        run: |
+          UPSTREAM="vendor/XHYN-IV-recomp/os/android/app/src/main"
+          test -d "$UPSTREAM/java/com/libertyrecomp"
+          mkdir -p os/android/app/src/main/java/com/libertyrecomp os/android/app/src/main/assets os/android/app/src/main/res
+          # Add upstream files only when absent; preserve our existing customized foundation.
+          rsync -a --ignore-existing "$UPSTREAM/java/com/libertyrecomp/" os/android/app/src/main/java/com/libertyrecomp/
+          rsync -a --ignore-existing "$UPSTREAM/assets/" os/android/app/src/main/assets/
+          rsync -a --ignore-existing "$UPSTREAM/res/" os/android/app/src/main/res/
+          echo "XHYN Java sources: $(find os/android/app/src/main/java/com/libertyrecomp -name '*.java' | wc -l)"
+          echo "Android assets: $(find os/android/app/src/main/assets -type f | wc -l)"
+          test "$(find os/android/app/src/main/java/com/libertyrecomp -name '*.java' | wc -l)" -ge 60
+          test "$(find os/android/app/src/main/assets -type f | wc -l)" -ge 60
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
