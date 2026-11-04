@@ -36,8 +36,8 @@ bool UniversalRuntime::Initialize(const std::string& storage_path) {
   // 3. Inspect game data path
   if (!VerifyGameData(storage_path + "/game")) {
     status_.state = RuntimeInitState::GameDataNotFound;
-    status_.status_message = "Vulkan initialized successfully. Legally obtained GTA IV Xbox 360 game data not found in " +
-                             storage_path + "/game. Please install Title Update 8 and retail game data.";
+    status_.status_message =
+        "GTA IV game data is missing or cannot yet be verified. The installer must parse XEX metadata and validate the matching Title Update 8 before launch.";
     return true; // Non-fatal for engine startup: launcher handles installation
   }
 
