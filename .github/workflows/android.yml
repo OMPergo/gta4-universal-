@@ -3,6 +3,7 @@ name: Android ARM64 Build & Validation
 on:
   push:
     branches: [main, "jules-*", "friday/**"]
+    tags: ["android-v*"]
   pull_request:
   workflow_dispatch:
 
@@ -52,23 +53,35 @@ jobs:
           yes | sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'ndk;27.0.12077973' 'ndk;29.0.14206865'
           echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/29.0.14206865" >> "$GITHUB_ENV"
 
-      - name: Initialize only the Android runtime dependency submodules
+      - name: Prepare every pinned upstream dependency and apply reviewed patches
         run: |
-          git -C vendor/XHYN-IV-recomp submodule update --init --recursive glue/rexglue-sdk-main/thirdparty
+          python3 vendor/XHYN-IV-recomp/tools/setup_repo.py
+          python3 vendor/XHYN-IV-recomp/tools/setup_repo.py --check
+          test -f vendor/XHYN-IV-recomp/tools/XenosRecomp/CMakeLists.txt
+          test -f vendor/XHYN-IV-recomp/glue/rexglue-sdk-main/gta4-recomp/generated/sources.cmake
 
-      - name: Build the real XHYN / ReXGlue GTA IV Android runtime
+      - name: Build Android Vulkan driver proxy and hooks
         run: |
+          export ANDROID_HOME="$ANDROID_SDK_ROOT"
+          export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/29.0.14206865"
+          bash vendor/XHYN-IV-recomp/os/android/scripts/build_driver_proxy.sh
+
+      - name: Build and stage the real GTA IV ARM64 engine
+        env:
+          STRIP: "1"
+        run: |
+          export ANDROID_HOME="$ANDROID_SDK_ROOT"
+          export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/29.0.14206865"
           bash vendor/XHYN-IV-recomp/os/android/scripts/build_native.sh 2
-          test -f vendor/XHYN-IV-recomp/os/android/app/src/main/jniLibs/arm64-v8a/libmain.so
-          test -f vendor/XHYN-IV-recomp/os/android/app/src/main/jniLibs/arm64-v8a/librexruntime.so
-
-      - name: Stage real runtime libraries and resources into Universal app
-        run: |
+          UPSTREAM_LIBS="vendor/XHYN-IV-recomp/os/android/app/src/main/jniLibs/arm64-v8a"
           mkdir -p os/android/app/src/main/jniLibs/arm64-v8a os/android/app/src/main/assets/Resources
-          cp vendor/XHYN-IV-recomp/os/android/app/src/main/jniLibs/arm64-v8a/*.so os/android/app/src/main/jniLibs/arm64-v8a/
+          cp "$UPSTREAM_LIBS"/*.so os/android/app/src/main/jniLibs/arm64-v8a/
           cp -a vendor/XHYN-IV-recomp/os/android/app/src/main/assets/Resources/. os/android/app/src/main/assets/Resources/
           test -f os/android/app/src/main/jniLibs/arm64-v8a/libmain.so
+          test -f os/android/app/src/main/jniLibs/arm64-v8a/libliberty_install.so
           test -f os/android/app/src/main/jniLibs/arm64-v8a/librexruntime.so
+          test -f os/android/app/src/main/jniLibs/arm64-v8a/libSDL3.so
+          test -f os/android/app/src/main/jniLibs/arm64-v8a/libvulkan.so
 
       - name: Configure and Build Host Test Suite
         run: |
@@ -126,14 +139,12 @@ jobs:
           path: os/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
-      - name: Create GitHub Release and Attach APK
-        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/jules-')
+      - name: Create versioned GitHub Release and attach APK
+        if: startsWith(github.ref, 'refs/tags/android-v')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG_NAME="v0.5.9.3-universal-alpha"
+          TAG_NAME="$GITHUB_REF_NAME"
           APK_PATH="os/android/app/build/outputs/apk/debug/app-debug.apk"
-          gh release view "$TAG_NAME" || gh release create "$TAG_NAME" "$APK_PATH" \
-            --title "GTA IV Universal $TAG_NAME" \
-            --notes "Automated CI Release for GTA IV Universal on Android ARM64." \
-            --latest || gh release upload "$TAG_NAME" "$APK_PATH" --clobber || true
+          printf '## %s\n\n- Commit: %s\n- Android ABI: arm64-v8a\n- CI: successful\n- APK: attached below\n\nThis is an automated development build. Until a stable release-signing key is configured, APKs from different workflow runs may not install as in-place updates over one another.\n' "$TAG_NAME" "$GITHUB_SHA" > release-notes.md
+          gh release create "$TAG_NAME" "$APK_PATH" --title "GTA IV Universal $TAG_NAME" --notes-file release-notes.md
