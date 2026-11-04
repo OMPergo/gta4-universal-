@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   build-android:
-    name: Android ARM64 Tests & Validation
+    name: Android ARM64 Native & Host Validation
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout Repository
@@ -25,10 +25,14 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Android SDK and NDK
+      - name: Setup Android SDK Tools
         uses: android-actions/setup-android@v3
         with:
-          packages: platform-tools platforms;android-35 build-tools;35.0.0 ndk;27.0.12077973
+          packages: platform-tools
+
+      - name: Install Android SDK Packages via sdkmanager
+        run: |
+          yes | sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'ndk;27.0.12077973'
 
       - name: Configure and Build Host Test Suite
         run: |
@@ -45,3 +49,21 @@ jobs:
             -DANDROID_PLATFORM=android-35 \
             -DCMAKE_BUILD_TYPE=Release
           cmake --build build-android-arm64 --target LibertyUniversalCore
+
+      - name: Assemble Android APK
+        run: |
+          if [ -d "os/android" ] && [ -f "os/android/gradlew" ]; then
+            cd os/android
+            chmod +x ./gradlew
+            ./gradlew assembleDebug
+          else
+            echo "::notice ::Standalone Android application project (os/android) is not staged in this branch; APK assembly skipped."
+          fi
+
+      - name: Upload Android APK Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: os/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: ignore
