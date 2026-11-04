@@ -11,7 +11,7 @@ This file records confirmed build failures, their root causes, fixes, and checks
 - **Root cause:** CI initialized only `glue/rexglue-sdk-main/thirdparty`. The upstream XHYN repository has a setup helper at `tools/setup_repo.py` that initializes the complete pinned dependency graph (including XenosRecomp and its own dependencies) and applies reviewed dependency patches. Fetching one subtree is insufficient.
 - **Fix:** Run `python3 vendor/XHYN-IV-recomp/tools/setup_repo.py` before native CMake configuration, then run `--check` and explicitly verify XenosRecomp and generated source manifests.
 - **Prevention:** Never replace the upstream setup helper with a hand-picked submodule list unless a reviewed dependency manifest proves the list complete. CI fails early if required sources are absent.
-- **Status:** Fix committed in the current branch; awaiting CI validation.
+- **Status:** Initial fix committed; follow-up hardening adds the Python command alias and uses the same NDK revision for every native build target. Awaiting CI validation.
 
 ## BL-002 — Runtime libraries not yet proven to package or launch
 
