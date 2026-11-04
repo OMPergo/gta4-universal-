@@ -47,8 +47,14 @@ bool UniversalRuntime::Initialize(const std::string& storage_path) {
 
 bool UniversalRuntime::AttemptVulkanInitialization() {
   if (status_.hardware_report.vulkan.is_available) {
-    status_.state = RuntimeInitState::VulkanInitialized;
-    return true;
+    // Capability probing is not Vulkan initialization. The actual instance,
+    // physical-device, logical-device, and swapchain setup must be supplied by
+    // the graphics backend before this runtime can claim VulkanInitialized.
+    status_.state = RuntimeInitState::VulkanCapabilityDetected;
+    status_.status_message =
+        "Vulkan support detected, but the Vulkan device/backend is not integrated yet.";
+    status_.last_error_message = status_.status_message;
+    return false;
   }
 
   // Hardware-specific workaround configuration
@@ -57,8 +63,10 @@ bool UniversalRuntime::AttemptVulkanInitialization() {
     status_.gpu_workarounds.mali_subpass_load_fallback = true;
   }
 
-  status_.state = RuntimeInitState::VulkanInitialized;
-  return true;
+  status_.state = RuntimeInitState::FatalError;
+  status_.status_message = "Vulkan is unavailable on this device; runtime initialization cannot continue.";
+  status_.last_error_message = status_.status_message;
+  return false;
 }
 
 bool UniversalRuntime::VerifyGameData(const std::string& path) {
@@ -72,24 +80,23 @@ bool UniversalRuntime::VerifyGameData(const std::string& path) {
     return false;
   }
 
-  auto result = Installer::ValidateGta4Media(0x545407F2, 0x6AC07221);
-  if (result.status == Installer::MediaIdValidationStatus::ValidSupportedUsaTU8) {
-    status_.state = RuntimeInitState::GameDataValidated;
-    return true;
-  }
-
+  // Do not validate a user's image using hard-coded Title ID / Media ID values.
+  // Those values must be parsed from the selected XEX and checked against the
+  // installed TU8 metadata before the game data can be trusted.
+  status_.status_message =
+      "GTA IV default.xex was found, but XEX metadata and Title Update 8 validation are not integrated yet.";
+  status_.last_error_message = status_.status_message;
   return false;
 }
 
 bool UniversalRuntime::StartEngineExecution() {
-  status_.state = RuntimeInitState::EngineInitializing;
-  status_.is_engine_ready = true;
-
-  // Execute recompiled PowerPC runtime initialization
-  status_.state = RuntimeInitState::GameCodeExecuting;
-  status_.is_game_code_executing = true;
-  status_.status_message = "GTA IV PowerPC recompiled execution engine active.";
-  return true;
+  status_.state = RuntimeInitState::FatalError;
+  status_.is_engine_ready = false;
+  status_.is_game_code_executing = false;
+  status_.status_message =
+      "GTA IV cannot start: the ReXGlue runtime and generated PowerPC game entry point are not linked into this build.";
+  status_.last_error_message = status_.status_message;
+  return false;
 }
 
 void UniversalRuntime::Shutdown() {
