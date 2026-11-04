@@ -33,7 +33,7 @@ jobs:
       - name: Configure and Build Host Test Suite
         run: |
           cmake -B build-host -DCMAKE_BUILD_TYPE=Release
-          cmake --build build-host --target run_all_tests
+          cmake --build build-host
           ctest --test-dir build-host --output-on-failure
 
       - name: Configure and Build Android ARM64 Native Library

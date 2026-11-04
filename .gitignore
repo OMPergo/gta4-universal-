@@ -1,6 +1,6 @@
-build/
-out/
-bin/
+build*/
+out*/
+bin*/
 *.o
 *.a
 *.so
