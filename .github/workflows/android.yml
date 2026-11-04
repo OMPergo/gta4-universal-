@@ -35,6 +35,20 @@ jobs:
           test "$(find os/android/app/src/main/java/com/libertyrecomp -name '*.java' | wc -l)" -ge 60
           test "$(find os/android/app/src/main/assets -type f | wc -l)" -ge 60
 
+      - name: Apply authentic GTA IV Liberty City launcher artwork
+        run: |
+          IMAGE="os/android/app/src/main/res/drawable-nodpi/launcher_art.jpg"
+          mkdir -p "$(dirname "$IMAGE")"
+          curl --fail --location --retry 3 --retry-delay 2 \
+            "https://www.gta4.tv/content/images/174-gtaiv-liberty-citys-skyline.jpg" \
+            --output "$IMAGE"
+          file "$IMAGE" | grep -qi 'JPEG image data'
+          IMAGE_SIZE="$(wc -c < "$IMAGE")"
+          test "$IMAGE_SIZE" -gt 500000
+          test "$IMAGE_SIZE" -lt 900000
+          echo "Launcher artwork: $IMAGE ($IMAGE_SIZE bytes)"
+          echo "Source: GTA4.TV — Liberty City's Skyline, 1280x720 official screenshot gallery."
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
