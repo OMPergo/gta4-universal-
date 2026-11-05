@@ -1,4 +1,6 @@
 import SwiftUI
+import UniformTypeIdentifiers
+import UIKit
 
 @main
 struct GTAIVUniversalApp: App {
@@ -11,11 +13,32 @@ struct GTAIVUniversalApp: App {
 }
 
 struct LauncherView: View {
+    @AppStorage("gameDataFolderName") private var gameDataFolderName = ""
+    @AppStorage("graphicsPreset") private var graphicsPreset = "Native"
+    @AppStorage("frameLimit") private var frameLimit = "30 FPS"
+    @AppStorage("antiAliasing") private var antiAliasing = "FXAA"
+
     @State private var selectedTab = "Home"
-    @State private var installStatus = "Game data not installed"
+    @State private var showingFolderPicker = false
     @State private var showingInfo = false
+    @State private var importMessage = ""
+    @State private var importError = false
 
     private let tabs = ["Home", "Install", "Settings", "Diagnostics"]
+
+    private var gameDataURL: URL? {
+        guard !gameDataFolderName.isEmpty,
+              let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            return nil
+        }
+        return documents.appendingPathComponent(gameDataFolderName, isDirectory: true)
+    }
+
+    private var hasGameData: Bool {
+        guard let url = gameDataURL else { return false }
+        var isDirectory: ObjCBool = false
+        return FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) && isDirectory.boolValue
+    }
 
     var body: some View {
         ZStack {
@@ -41,10 +64,24 @@ struct LauncherView: View {
                 tabBar
             }
         }
+        .fileImporter(
+            isPresented: $showingFolderPicker,
+            allowedContentTypes: [.folder],
+            allowsMultipleSelection: false,
+            onCompletion: handleFolderImport
+        )
         .alert("GTA IV Universal", isPresented: $showingInfo) {
             Button("OK", role: .cancel) { }
         } message: {
-            Text("This is the first iOS launcher shell. The GTA IV engine and game-data launch pipeline are not integrated yet.")
+            Text("This is a functional iOS launcher and game-folder manager. The GTA IV native engine and gameplay launch pipeline are not integrated yet.")
+        }
+        .alert(importError ? "Import failed" : "Game folder imported", isPresented: Binding(
+            get: { !importMessage.isEmpty },
+            set: { if !$0 { importMessage = "" } }
+        )) {
+            Button("OK", role: .cancel) { importMessage = "" }
+        } message: {
+            Text(importMessage)
         }
     }
 
@@ -65,6 +102,7 @@ struct LauncherView: View {
                     .font(.system(size: 21))
                     .foregroundStyle(.white.opacity(0.8))
             }
+            .accessibilityLabel("About GTA IV Universal")
         }
         .padding(.horizontal, 20)
         .padding(.top, 14)
@@ -96,7 +134,7 @@ struct LauncherView: View {
             statusCard
 
             Button { selectedTab = "Install" } label: {
-                Label("INSTALL GAME DATA", systemImage: "square.and.arrow.down")
+                Label(hasGameData ? "MANAGE GAME FOLDER" : "IMPORT GAME FOLDER", systemImage: "folder.badge.plus")
                     .font(.headline.weight(.bold))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
@@ -105,27 +143,29 @@ struct LauncherView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
             }
 
-            Button { showingInfo = true } label: {
-                Label("PLAY", systemImage: "play.fill")
-                    .font(.headline.weight(.bold))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(.white.opacity(0.10))
-                    .foregroundStyle(.white.opacity(0.65))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
+            Label("GAME ENGINE NOT CONNECTED", systemImage: "info.circle")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.yellow.opacity(0.9))
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.top, 4)
         }
     }
 
     private var statusCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label(installStatus, systemImage: "externaldrive")
+            Label(hasGameData ? "Game folder imported" : "Game data not installed", systemImage: hasGameData ? "checkmark.circle.fill" : "externaldrive")
                 .font(.subheadline.weight(.semibold))
+            if hasGameData, let url = gameDataURL {
+                Text(url.lastPathComponent)
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.55))
+                    .lineLimit(1)
+            }
             Divider().overlay(.white.opacity(0.15))
             HStack {
                 metric("PLATFORM", "iOS")
                 Spacer()
-                metric("BUILD", "Preview")
+                metric("BUILD", appVersion)
                 Spacer()
                 metric("ENGINE", "Pending")
             }
@@ -138,13 +178,25 @@ struct LauncherView: View {
     private var install: some View {
         VStack(alignment: .leading, spacing: 16) {
             sectionTitle("GAME INSTALLATION")
-            Text("Game files must be supplied by you. This preview does not download or contain Rockstar game data.")
+            Text("Select a folder containing your legally obtained GTA IV game files. The app copies it into its own private storage; it does not download or include Rockstar game data.")
                 .foregroundStyle(.white.opacity(0.7))
                 .font(.subheadline)
             statusCard
-            Label("Base game image — not configured", systemImage: "opticaldisc")
-            Label("Title Update 8 — not configured", systemImage: "arrow.down.circle")
-            Text("The iOS file-import and extraction pipeline still needs to be implemented.")
+            Button { showingFolderPicker = true } label: {
+                Label("CHOOSE GAME FOLDER", systemImage: "folder")
+                    .font(.headline.weight(.bold))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 15)
+                    .background(Color.white)
+                    .foregroundStyle(.black)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            if hasGameData {
+                Label("Your imported folder is saved inside this app.", systemImage: "checkmark.shield")
+                    .font(.footnote)
+                    .foregroundStyle(.green.opacity(0.9))
+            }
+            Text("Import and storage management work in this build. Game-file validation, extraction of disc images, and launching the native game engine are not implemented yet.")
                 .font(.footnote)
                 .foregroundStyle(.yellow.opacity(0.85))
         }
@@ -156,11 +208,10 @@ struct LauncherView: View {
     private var settings: some View {
         VStack(alignment: .leading, spacing: 16) {
             sectionTitle("SETTINGS")
-            settingRow("Graphics", value: "Native (default)")
-            settingRow("Frame limit", value: "30 FPS")
-            settingRow("Anti-aliasing", value: "FXAA")
-            settingRow("Renderer", value: "iOS backend pending")
-            Text("These are preview values; settings are not connected to the game engine yet.")
+            settingPicker("Graphics preset", selection: $graphicsPreset, options: ["Native", "Low", "Medium", "High"])
+            settingPicker("Frame limit", selection: $frameLimit, options: ["30 FPS", "40 FPS", "60 FPS"])
+            settingPicker("Anti-aliasing", selection: $antiAliasing, options: ["Off", "FXAA", "MSAA"])
+            Text("These preferences are saved on this device. They will be passed to the game engine once its iOS integration is complete.")
                 .font(.footnote)
                 .foregroundStyle(.white.opacity(0.55))
         }
@@ -171,12 +222,15 @@ struct LauncherView: View {
 
     private var diagnostics: some View {
         VStack(alignment: .leading, spacing: 16) {
-            sectionTitle("DIAGNOSTICS")
-            settingRow("App", value: "iOS launcher shell")
+            sectionTitle("DEVICE DIAGNOSTICS")
+            settingRow("App", value: "GTA IV Universal")
+            settingRow("App version", value: appVersion)
+            settingRow("Device", value: UIDevice.current.model)
+            settingRow("iOS version", value: UIDevice.current.systemVersion)
+            settingRow("Game folder", value: hasGameData ? "Imported" : "Not imported")
             settingRow("Native engine", value: "Not integrated")
-            settingRow("Game process", value: "Unavailable")
-            settingRow("Crash capture", value: "Not implemented")
-            Text("This screen will display real runtime, memory, renderer, and crash information after native integration.")
+            settingRow("Game process", value: "Not available")
+            Text("Device and app information is read from iOS. Runtime, renderer, memory, and crash diagnostics will become available after native engine integration.")
                 .font(.footnote)
                 .foregroundStyle(.white.opacity(0.55))
         }
@@ -197,9 +251,47 @@ struct LauncherView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
                 }
+                .accessibilityLabel(tab)
             }
         }
         .background(.black.opacity(0.55))
+    }
+
+    private var appVersion: String {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+        return "\(version) (\(build))"
+    }
+
+    private func handleFolderImport(_ result: Result<[URL], Error>) {
+        switch result {
+        case .failure(let error):
+            importError = true
+            importMessage = error.localizedDescription
+        case .success(let urls):
+            guard let source = urls.first else { return }
+            let hasAccess = source.startAccessingSecurityScopedResource()
+            defer { if hasAccess { source.stopAccessingSecurityScopedResource() } }
+            do {
+                guard let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+                    throw NSError(domain: "GTAIVUniversal", code: 1, userInfo: [NSLocalizedDescriptionKey: "App storage is unavailable."])
+                }
+                let baseName = "GameData"
+                var destination = documents.appendingPathComponent(baseName, isDirectory: true)
+                var suffix = 2
+                while FileManager.default.fileExists(atPath: destination.path) {
+                    destination = documents.appendingPathComponent("\(baseName)-\(suffix)", isDirectory: true)
+                    suffix += 1
+                }
+                try FileManager.default.copyItem(at: source, to: destination)
+                gameDataFolderName = destination.lastPathComponent
+                importError = false
+                importMessage = "Your game folder was copied into the app's private storage as \(destination.lastPathComponent). The game engine is not connected yet."
+            } catch {
+                importError = true
+                importMessage = error.localizedDescription
+            }
+        }
     }
 
     private func sectionTitle(_ title: String) -> some View {
@@ -213,11 +305,30 @@ struct LauncherView: View {
         }
     }
 
+    private func settingPicker(_ title: String, selection: Binding<String>, options: [String]) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text(title).foregroundStyle(.white.opacity(0.75))
+            Picker(title, selection: selection) {
+                ForEach(options, id: \.self) { option in
+                    Text(option).tag(option)
+                }
+            }
+            .pickerStyle(.menu)
+            .tint(.white)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(.white.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+        }
+    }
+
     private func settingRow(_ title: String, value: String) -> some View {
         HStack {
             Text(title).foregroundStyle(.white.opacity(0.75))
             Spacer()
             Text(value).font(.subheadline.weight(.semibold))
+                .multilineTextAlignment(.trailing)
         }
         .padding(.vertical, 7)
     }
