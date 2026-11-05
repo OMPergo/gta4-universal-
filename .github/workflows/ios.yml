@@ -2,7 +2,7 @@ name: Apple iOS & iPadOS Build
 
 on:
   push:
-    branches: [main, "jules-*"]
+    branches: [main, "jules-*", "friday/android-runtime-audit"]
   pull_request:
   workflow_dispatch:
 
