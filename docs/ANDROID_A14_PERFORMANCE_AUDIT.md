@@ -114,7 +114,10 @@ Apply these through the app's existing Settings UI, not by editing generated bin
 | Converted-texture disk cache | On | Can reduce repeated conversion work without keeping the same extra working set resident. |
 | GPU driver | System/automatic Mali driver | Do not force an Adreno/Turnip driver on Mali. |
 
-This is a diagnostic profile, not a guaranteed fix. If the game is CPU-bound or stalls on shader compilation, lowering resolution alone will not solve it. Compare one change group at a time and record average frame time, 1% lows, thermal state, PSS/RSS, texture budget/evictions, and pipeline wait time.
+This is a diagnostic profile, not a guaranteed fix.
+
+The Friday branch now also includes an opt-in **A14 low-memory preset** in Settings → Performance. It stages the values above (540p, FSR1 Balanced, 30 FPS, reduced draw distance, shadows off, quarter reflections updated every two frames, two shader workers, no extended texture retention, disk cache on, GPU Turbo off, thermal guard on). The user must review and press Save; restart-required settings apply on the next game launch. This preset is a controlled experiment, not a guaranteed fix. It appears in a new APK only after the Android workflow for the preset commit succeeds.
+ If the game is CPU-bound or stalls on shader compilation, lowering resolution alone will not solve it. Compare one change group at a time and record average frame time, 1% lows, thermal state, PSS/RSS, texture budget/evictions, and pipeline wait time.
 
 ## Memory policy: what not to do
 
