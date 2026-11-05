@@ -1,22 +1,25 @@
 # Implementation Status
 
-This status reflects source code present in this repository, not roadmap descriptions or intended architecture.
+This status distinguishes the gameplay runtime built from the pinned upstream Android submodule from the separate support code in this repository.
 
 | Subsystem | Status | Evidence / remaining work |
 | :--- | :--- | :--- |
-| Hardware capability probing | Implemented | CPU, memory, GPU and Vulkan capability reporting exists. |
-| Performance tiers | Implemented as configuration | Tier selection/settings exist; actual in-game dynamic resolution and FSR rendering are not integrated. |
-| GPU compatibility flags | Implemented as configuration | Workaround flags exist; they do not replace a functioning graphics backend. |
-| Multiplayer | Scaffolding only | Session/packet logic exists; no integrated GTA IV world/network runtime. |
-| Media ID validator | Pure validation helper only | It accepts supplied IDs; runtime does not yet parse IDs from the XEX or validate TU8 files. |
-| Android JNI bridge | Implemented | Exposes initialization and status calls to the Android app. |
-| Android ARM64 support-library build | CI configured | Does not establish that the game runtime is linked or playable. |
-| Vulkan device initialization | Not implemented | Capability detection exists; instance/device/queue/swapchain creation is absent. |
-| ReXGlue runtime | Not integrated | Required runtime sources and Android linkage are absent from this build. |
-| Generated GTA IV PowerPC code | Not integrated | No generated translation-unit set or actual game entry point is built by the current CMake target. |
-| XEX/TU8 installation and verification | Not implemented | Needs metadata parsing, update matching, extraction and integrity checks. |
-| Playable Android GTA IV | Not achieved | Must not be claimed until the runtime is integrated and tested on-device. |
+| XHYN/ReXGlue Android gameplay runtime | Built by CI | Pinned submodule is initialized and its native build script produces the Android gameplay libraries. Physical Galaxy A14 testing has reached gameplay. Stability is not established. |
+| Android SDL3 activity and launcher | Integrated from pinned port | `LibertyActivity` hosts SDL3; `LauncherActivity` provides installation, driver, settings, logs, and launch flow. |
+| Android native installer | Packaged | CI stages `libliberty_install.so`; installer JNI calls it for source inspection and game installation. |
+| Vulkan renderer and driver components | Built by upstream scripts | APK includes the ReXGlue GTA IV GPU plugins and Vulkan proxy. Mali-specific capability/pipeline behavior still needs device validation. |
+| Generated GTA IV PowerPC code | Built by upstream native build | Compiled into the gameplay `libmain.so`; not built by the root support-core CMake target. |
+| Root hardware capability probing | Implemented | CPU, memory, GPU and Vulkan capability reporting exists in `LibertyRecomp/diagnostics`. |
+| Root performance tiers | Implemented as configuration | Standalone support-core configuration; not currently the source of truth for the upstream renderer's Android settings. |
+| Root GPU compatibility flags | Implemented as configuration | Standalone flags; actual runtime workarounds are in the pinned upstream renderer/driver path. |
+| Multiplayer | Scaffolding only | Session/packet logic exists; no integrated GTA IV world/network multiplayer runtime. |
+| Root media-ID validator | Pure validation helper only | Separate from the upstream native installer and not proof of full XEX/TU validation. |
+| Root `LibertyUniversalCore` JNI bridge | Built as support library | Its `nativeInitRuntime` bridge is not the SDL gameplay activity's JNI launch contract. |
+| Physical-device stability | Not achieved | Galaxy A14 reached gameplay but reported severe frame pacing, low-memory termination, and a separate signal-11 exit. Root cause remains open. |
+| iOS gameplay runtime | Not integrated | Current iOS build is a SwiftUI launcher shell; no iOS ReXGlue/SDL3/Metal or MoltenVK gameplay backend is built. |
 
-## Build size
+## Android build checks
 
-The Android workflow enforces a 100 MiB APK ceiling for the application package. Game data is expected to remain external. Passing that size check does not imply that the game runtime is complete.
+The Android workflow initializes pinned dependencies, builds the driver proxy and native gameplay runtime, builds the support core and host tests, checks ARM64 ELF headers and required APK entries, calculates a checksum, and enforces the 200,000,000-byte APK ceiling.
+
+These checks establish build/package integrity, not sustained performance or crash-free device gameplay. See [Android A14 Performance Audit](ANDROID_A14_PERFORMANCE_AUDIT.md).
