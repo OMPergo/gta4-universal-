@@ -23,16 +23,18 @@ permissions:
 
 jobs:
   build-ios:
-    name: Build GTA IV Universal iOS app
-    runs-on: macos-14
+    name: Build GTA IV Universal for iPhone and iPad
+    runs-on: macos-15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_15.4.app
+      - name: Select compatible Xcode
+        run: |
+          sudo xcode-select -s /Applications/Xcode_16.4.app
+          xcodebuild -version
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -41,50 +43,63 @@ jobs:
         working-directory: ios
         run: xcodegen generate --spec project.yml
 
-      - name: Build iOS Simulator app
+      - name: Build iPhone Simulator app
         run: |
           xcodebuild \
             -project ios/GTAIVUniversal.xcodeproj \
             -scheme GTAIVUniversal \
-            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
             -configuration Release \
-            -derivedDataPath build/ios-simulator \
+            -derivedDataPath build/ios-simulator-iphone \
+            TARGETED_DEVICE_FAMILY=1 \
             CODE_SIGNING_ALLOWED=NO build
 
-      - name: Build unsigned iOS device app
+      - name: Build iPad Simulator app
         run: |
           xcodebuild \
             -project ios/GTAIVUniversal.xcodeproj \
             -scheme GTAIVUniversal \
-            -sdk iphoneos \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Release \
+            -derivedDataPath build/ipados-simulator \
+            TARGETED_DEVICE_FAMILY=2 \
+            CODE_SIGNING_ALLOWED=NO build
+
+      - name: Build universal iPhone and iPad device app
+        run: |
+          xcodebuild \
+            -project ios/GTAIVUniversal.xcodeproj \
+            -scheme GTAIVUniversal \
+            -destination 'generic/platform=iOS' \
             -configuration Release \
             -derivedDataPath build/ios-device \
+            TARGETED_DEVICE_FAMILY='1,2' \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO build
 
-      - name: Package unsigned IPA
+      - name: Package unsigned universal IPA
         run: |
           APP="build/ios-device/Build/Products/Release-iphoneos/GTAIVUniversal.app"
           test -d "$APP"
           mkdir -p build/ipa/Payload
           cp -R "$APP" build/ipa/Payload/
           cd build/ipa
-          /usr/bin/zip -qry ../../GTA-IV-Universal-iOS-unsigned.ipa Payload
+          /usr/bin/zip -qry ../../GTA-IV-Universal-iOS-iPadOS-unsigned.ipa Payload
           cd ../..
-          test -s GTA-IV-Universal-iOS-unsigned.ipa
-          shasum -a 256 GTA-IV-Universal-iOS-unsigned.ipa > ios-ipa-sha256.txt
-          echo "## GTA IV Universal — iOS build" >> "$GITHUB_STEP_SUMMARY"
+          test -s GTA-IV-Universal-iOS-iPadOS-unsigned.ipa
+          shasum -a 256 GTA-IV-Universal-iOS-iPadOS-unsigned.ipa > ios-ipa-sha256.txt
+          echo "## GTA IV Universal — iPhone and iPad build" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Unsigned device IPA packaged successfully. It requires signing before installation." >> "$GITHUB_STEP_SUMMARY"
+          echo "Unsigned universal device IPA packaged successfully. It requires signing before installation." >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "This is the iOS launcher shell; GTA IV engine/runtime integration is not yet complete." >> "$GITHUB_STEP_SUMMARY"
+          echo "The launcher shell is built for both iPhone and iPad. GTA IV engine/runtime integration is not yet complete." >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload iOS build
+      - name: Upload iOS and iPadOS build
         uses: actions/upload-artifact@v4
         with:
-          name: gta4-universal-ios-unsigned
+          name: gta4-universal-ios-ipados-unsigned
           path: |
-            GTA-IV-Universal-iOS-unsigned.ipa
+            GTA-IV-Universal-iOS-iPadOS-unsigned.ipa
             ios-ipa-sha256.txt
           if-no-files-found: error
           retention-days: 30
