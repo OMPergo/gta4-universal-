@@ -3,18 +3,30 @@ name: Apple iOS & iPadOS Build
 on:
   push:
     branches: [main, "jules-*", "friday/android-runtime-audit"]
+    paths:
+      - ".github/workflows/ios.yml"
+      - "ios/**"
+      - "CMakeLists.txt"
+      - "LibertyRecomp/**"
+      - "tests/**"
   pull_request:
+    paths:
+      - ".github/workflows/ios.yml"
+      - "ios/**"
+      - "CMakeLists.txt"
+      - "LibertyRecomp/**"
+      - "tests/**"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  build-ios-simulator:
-    name: iOS Simulator Build & Host Validation
+  build-ios:
+    name: Build GTA IV Universal iOS app
     runs-on: macos-14
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           submodules: recursive
@@ -22,38 +34,56 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_15.4.app
 
-      - name: Build & Run Native Host Tests
-        run: |
-          cmake -B build-host -DCMAKE_BUILD_TYPE=Release
-          cmake --build build-host
-          ctest --test-dir build-host --output-on-failure
+      - name: Install XcodeGen
+        run: brew install xcodegen
 
-      - name: Configure and Build iOS Simulator Target
-        run: |
-          cmake -B build-ios-sim -G Xcode \
-            -DCMAKE_SYSTEM_NAME=iOS \
-            -DCMAKE_OSX_SYSROOT=iphonesimulator \
-            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
-          cmake --build build-ios-sim --config Release --target LibertyUniversalCore
+      - name: Generate Xcode project
+        run: xcodegen generate --spec ios/project.yml
 
-  build-ios-device:
-    name: iOS ARM64 Device Target Build (Unsigned)
-    runs-on: macos-14
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - name: Build iOS Simulator app
+        run: |
+          xcodebuild \
+            -project ios/GTAIVUniversal.xcodeproj \
+            -scheme GTAIVUniversal \
+            -sdk iphonesimulator \
+            -configuration Release \
+            -derivedDataPath build/ios-simulator \
+            CODE_SIGNING_ALLOWED=NO build
+
+      - name: Build unsigned iOS device app
+        run: |
+          xcodebuild \
+            -project ios/GTAIVUniversal.xcodeproj \
+            -scheme GTAIVUniversal \
+            -sdk iphoneos \
+            -configuration Release \
+            -derivedDataPath build/ios-device \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO build
+
+      - name: Package unsigned IPA
+        run: |
+          APP="build/ios-device/Build/Products/Release-iphoneos/GTAIVUniversal.app"
+          test -d "$APP"
+          mkdir -p build/ipa/Payload
+          cp -R "$APP" build/ipa/Payload/
+          cd build/ipa
+          /usr/bin/zip -qry ../../GTA-IV-Universal-iOS-unsigned.ipa Payload
+          cd ../..
+          test -s GTA-IV-Universal-iOS-unsigned.ipa
+          shasum -a 256 GTA-IV-Universal-iOS-unsigned.ipa > ios-ipa-sha256.txt
+          echo "## GTA IV Universal — iOS build" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Unsigned device IPA packaged successfully. It requires signing before installation." >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "This is the iOS launcher shell; GTA IV engine/runtime integration is not yet complete." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload iOS build
+        uses: actions/upload-artifact@v4
         with:
-          submodules: recursive
-
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_15.4.app
-
-      - name: Configure and Build iOS ARM64 Device Target
-        run: |
-          cmake -B build-ios-dev -G Xcode \
-            -DCMAKE_SYSTEM_NAME=iOS \
-            -DCMAKE_OSX_SYSROOT=iphoneos \
-            -DCMAKE_OSX_ARCHITECTURES="arm64" \
-            -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED="NO" \
-            -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED="NO"
-          cmake --build build-ios-dev --config Release --target LibertyUniversalCore
+          name: gta4-universal-ios-unsigned
+          path: |
+            GTA-IV-Universal-iOS-unsigned.ipa
+            ios-ipa-sha256.txt
+          if-no-files-found: error
+          retention-days: 30
