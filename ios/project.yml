@@ -6,9 +6,9 @@ options:
 settings:
   base:
     PRODUCT_BUNDLE_IDENTIFIER: com.ompergo.gtaivuniversal
-    PRODUCT_NAME: GTA IV Universal
+    PRODUCT_NAME: GTAIVUniversal
     SWIFT_VERSION: "5.0"
-    TARGETED_DEVICE_FAMILY: "1"
+    TARGETED_DEVICE_FAMILY: "1,2"
     INFOPLIST_KEY_CFBundleDisplayName: GTA IV Universal
     INFOPLIST_KEY_UILaunchScreen_Generation: YES
     GENERATE_INFOPLIST_FILE: YES
