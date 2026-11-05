@@ -4,12 +4,16 @@
 ## Project status and downloads
 
 - **Build status:** [![Android ARM64 CI](https://github.com/OMPergo/gta4-universal-/actions/workflows/android.yml/badge.svg?branch=friday%2Fandroid-runtime-audit)](https://github.com/OMPergo/gta4-universal-/actions/workflows/android.yml)
-- **Latest Android APK (public direct download):** [Download app-debug.apk](https://github.com/OMPergo/gta4-universal-/releases/download/android-latest/app-debug.apk)\n- **Latest Android release page:** [GTA IV Universal — Latest Android Build](https://github.com/OMPergo/gta4-universal-/releases/tag/android-latest)\n- **Versioned releases:** [GitHub Releases](https://github.com/OMPergo/gta4-universal-/releases)
+- **Latest Android APK (public direct download):** [Download app-debug.apk](https://github.com/OMPergo/gta4-universal-/releases/download/android-latest/app-debug.apk)
+- **Latest Android release page:** [GTA IV Universal — Latest Android Build](https://github.com/OMPergo/gta4-universal-/releases/tag/android-latest)
+- **Versioned releases:** [GitHub Releases](https://github.com/OMPergo/gta4-universal-/releases)
 - **Every build and its logs:** [GitHub Actions](https://github.com/OMPergo/gta4-universal-/actions)
 - **Commit history:** [Friday integration branch](https://github.com/OMPergo/gta4-universal-/commits/friday/android-runtime-audit)
 - **Known issues and regression-prevention ledger:** [Build Failure Ledger](docs/BUILD_FAILURE_LEDGER.md)
 - **Galaxy A14 5G findings and recommended test profile:** [Android A14 Performance Audit](docs/ANDROID_A14_PERFORMANCE_AUDIT.md)
 - **Automatic latest build:** every successful Android push build on this integration branch refreshes the public `android-latest` release and replaces its APK/checksum assets. Versioned `android-vX.Y.Z` releases remain available separately.
+- **iPhone/iPad status:** launcher shell only; unsigned IPA is not installable directly. See [iOS installation roadmap](docs/IOS_INSTALLATION_ROADMAP.md).
+
 
 > The `android-latest` link is a shared development APK for contributors. It is refreshed only after CI succeeds. It is not yet a stable signed release; until a stable signing key is configured, updates from different builds may require a data-safe reinstall.
 <!-- PROJECT_STATUS_END -->
