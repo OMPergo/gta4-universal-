@@ -85,7 +85,8 @@ jobs:
 
       - name: Build and stage the real GTA IV ARM64 engine
         env:
-          STRIP: "1"
+          # Keep native symbols in this diagnostic APK so tombstones can be symbolicated.
+          STRIP: "0"
         run: |
           export ANDROID_HOME="$ANDROID_SDK_ROOT"
           export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/29.0.14206865"
