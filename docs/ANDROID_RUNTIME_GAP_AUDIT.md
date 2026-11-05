@@ -1,35 +1,47 @@
-# Android Runtime Gap Audit
+# Android Runtime Integration Audit
 
-## Verified repository findings
+## Corrected runtime picture
 
-The current Android CMake target builds `LibertyUniversalCore` from the universal runtime, diagnostics, performance tiers, GPU compatibility, multiplayer session scaffolding, media-ID helper and JNI bridge.
+The Android workflow does build and package the actual GTA IV gameplay runtime. It checks out the pinned `vendor/XHYN-IV-recomp` submodule at commit `025986db1a24aec73ebccc60aac4c235fd820da4`, runs the upstream dependency setup, builds the Vulkan driver proxy, and invokes:
 
-The following required gameplay components are not linked by that target:
+```sh
+bash vendor/XHYN-IV-recomp/os/android/scripts/build_native.sh 2
+```
 
-- ReXGlue runtime / Xbox 360 guest environment.
-- Generated GTA IV PowerPC translation units and game entry point.
-- A real Vulkan renderer/device lifecycle.
-- XEX metadata parser and Title Update 8 patch/verification pipeline.
+That build stages the gameplay `libmain.so`, `libliberty_install.so`, ReXGlue runtime/GPU plugins, SDL3, C++ runtime, and game resources. Gradle packages those components with the Android launcher and SDL activity.
 
-### Runtime behavior corrections on the Friday branch
+The earlier claim that the Android APK lacked ReXGlue and generated GTA IV code was incorrect for this workflow and is superseded by this document.
 
-- Vulkan capability detection is no longer reported as successful Vulkan initialization. Startup stops until a real backend exists.
-- Finding `default.xex` no longer causes the runtime to accept hard-coded Title ID / Media ID constants as proof of a valid image.
-- Engine startup no longer sets `is_engine_ready` or `is_game_code_executing` without invoking a real game entry point.
-- Android release packaging no longer explicitly retains native debug symbols.
-- Android CI runs for `friday/**` branches and checks that the ARM64 shared library exists, is AArch64, and the APK is no larger than 100 MiB.
+## Keep the two code layers distinct
 
-These changes intentionally make the current app report that it is not ready rather than falsely claiming GTA IV is running.
+The root CMake target builds `LibertyUniversalCore` from:
 
-## Integration sequence
+- Hardware capability detection and performance-tier configuration.
+- GPU compatibility flags.
+- Multiplayer session/packet scaffolding.
+- A media-ID validation helper.
+- A small JNI bridge.
 
-1. Pin and inspect compatible upstream ReXGlue and Android port revisions, including their licenses and submodules.
-2. Import the required runtime and generated GTA IV source as reproducible pinned dependencies.
-3. Integrate the actual SDL/Android lifecycle, guest memory, kernel/XAM services, audio, input and renderer.
-4. Implement XEX metadata parsing and exact TU8 compatibility checks; validate user-supplied game data.
-5. Build ARM64 and run host/unit tests plus device smoke tests.
-6. Test on target hardware, measure memory/thermal behavior and confirm the APK stays under 100 MiB.
+This is a separate support library. It is not the gameplay engine, does not create the actual Vulkan device/renderer, and its `UniversalRuntime` initialization path is not the SDL activity's native launch path. Do not use its tier settings as evidence that the upstream renderer is applying those settings.
 
-## Device compatibility caveat
+The gameplay path is the pinned XHYN/ReXGlue build and its Android Java/native interface. `LibertyActivity` extends SDL3's `SDLActivity`; `Installer` loads `libliberty_install.so`.
 
-An ARM64 APK build is not proof that a specific Mali GPU or 4 GB RAM device can run GTA IV. Device support must be established by real runtime integration and sustained on-device testing.
+## What is still not proven
+
+- Sustained playable frame rate on the Galaxy A14 5G.
+- Freedom from Android low-memory kills and native signal-11 exits.
+- The exact allocation or resource lifetime responsible for process RSS growth.
+- Whether Mali's missing `shaderClipDistance` capability is causal to any observed rendering or crash issue.
+- Crash-free behavior across different Vulkan drivers and Android devices.
+- A playable iOS build. The current iOS target is a SwiftUI launcher shell only.
+
+## Required validation
+
+1. Preserve unstripped native symbols for diagnostic builds.
+2. Capture a native tombstone and symbolize it against the exact APK's matching `libmain.so`, ReXGlue, and GPU plugin symbols.
+3. Repeat the same in-game route with controlled settings and thermal starting conditions.
+4. Correlate frame times and pipeline compile/wait intervals with renderer-owned host allocations, Vulkan heap usage/budget, texture evictions, and pending releases.
+5. Validate Mali-specific shader/pipeline behavior separately from memory pressure.
+6. Record device model, Android build, driver choice, APK checksum, and game-data/update identity for every test.
+
+See [Android A14 Performance Audit](ANDROID_A14_PERFORMANCE_AUDIT.md) for the current evidence and the recommended controlled settings profile.
