@@ -144,3 +144,39 @@ The separate root `ComputeMemoryBudget()` function is not the same as the upstre
 ## Bottom line
 
 There is a real GTA IV ARM64 runtime in the Android APK, and the A14 has reached gameplay. The next gains are likely to come from reducing reflection/shadow/render-target work, testing FSR1 and a second shader worker, then fixing the measured texture/cache and pipeline stalls. The signal-11 fault still needs a symbolized native stack; no honest audit can claim a single proven root cause yet.
+
+
+## 2026-11-05 device capture: frame-pacing follow-up
+
+A new user-exported bundle, `XHYN-IV-debug-20261105-134655-616.log.zip`, was reviewed. It describes a Samsung SM-A146U / MediaTek MT6833 / Mali-G57 MC2 running Android 15.
+
+Observed configuration and outcomes:
+
+- The selected 540p output maps to a measured 960x430 surface on this handset. FSR1 was selected, but the runtime explicitly reported `FSR unavailable at this size` and used native 960x430 output. Therefore the previous A14 preset's FSR selection did not produce an upscale pass.
+- The selected run used a 30 FPS cap, draw-distance scale 0.60, two pipeline workers, two queued frames, pipeline prewarm/lookahead enabled, and extended texture reuse disabled.
+- During the sustained portion, reported publisher rate was usually about 8-10 FPS. Frame interval p50 was commonly around 96-106 ms, with p95 commonly around 150-190 ms and occasional longer spikes. These publisher measurements include waits and are not a direct display-FPS measurement.
+- Present timing showed refresh wall averages commonly around 46-66 ms and handoff wait averages around 44-62 ms. The instrumentation explicitly warns these are wall timings, not GPU execution times.
+- After initial pipeline preparation, the cache reported 202 ready pipelines and repeated windows with zero compilation and zero pipeline wait. One earlier first-use pipeline demand wait was about 230 ms. This means pipeline compilation explains an initial hitch but does not explain the persistent 8-10 FPS.
+- Texture residency stabilized around 147-148 MB; steady-state windows showed no evictions/reuploads. Texture-cache churn is not supported as the primary cause in this capture.
+- Audio logs reported frequent silence/empty-queue events and producer gaps up to roughly 58 ms, consistent with the application failing to keep its work queues fed; this is correlational, not proof of a specific CPU bottleneck.
+- Vulkan selected the system Mali-G57 driver successfully. The driver lacks `shaderClipDistance`; the runtime repeatedly logged `shader-clip-distance-unsupported` pipeline rejects. The existing clip/cull rewrite explicitly documents that it omits clip planes rather than emulating them. This is a compatibility/visual-correctness defect to investigate separately; do not treat it as the proven cause of the sustained frame-time issue.
+- The bundle's historical exit summaries separately record a game-process signal 11 and a launcher low-memory exit. They are not accompanied by a symbolized tombstone in this bundle and must not be conflated with the selected 13:46 diagnostic session.
+
+### Revised A14 test profile
+
+The prior one-tap profile was replaced because it selected FSR where the captured output required no scaling and increased worker count without evidence of benefit. The replacement is explicitly a diagnostic test, not a guaranteed fix:
+
+- Keep 540p output; select native presentation rather than a no-op FSR mode.
+- Use 20 FPS cap, minimum supported draw-distance scale (0.50), sun shadows off, quarter reflections, near capture distance, and two-frame reflection refresh intervals.
+- Use one pipeline worker, prewarm/lookahead on, three queued frames for a controlled queue-depth comparison, extended texture reuse off, and converted-texture disk cache on.
+- Enable detailed overlay CPU/GPU/resolution/RAM/thermal fields for the next device run. GPU utilization may remain unavailable on this driver.
+- Keep GPU Turbo and Thermal Guard off during this controlled baseline so dynamic clock/thermal policy does not confound the comparison; low-latency audio remains off.
+
+### Next diagnostic priorities
+
+1. Capture per-thread CPU profiling and GPU timing on-device. The current log cannot distinguish game CPU cost from Vulkan queue/GPU execution cost because its timing fields include waits and GPU temperature/utilization is unavailable.
+2. Capture a native tombstone/backtrace for the signal-11 exit and symbolize it against the unstripped ARM64 libraries.
+3. Investigate the Mali clip-distance pipeline rejection path as a separate rendering-compatibility issue. Do not enable the unrelated depth-clip fallback: this device reports `depthClamp=true`, and that option is documented only for devices without depth clamp.
+4. Do not increase texture budgets or enable extended texture reuse based on this capture; steady-state texture eviction was not the dominant hitch signal.
+
+A successful CI build still proves packaging and host checks only. It does not prove acceptable gameplay performance or crash-free sustained operation on the SM-A146U.
