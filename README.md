@@ -8,44 +8,37 @@
 - **Every build and its logs:** [GitHub Actions](https://github.com/OMPergo/gta4-universal-/actions)
 - **Commit history:** [Friday integration branch](https://github.com/OMPergo/gta4-universal-/commits/friday/android-runtime-audit)
 - **Known issues and regression-prevention ledger:** [Build Failure Ledger](docs/BUILD_FAILURE_LEDGER.md)
+- **Galaxy A14 5G findings and recommended test profile:** [Android A14 Performance Audit](docs/ANDROID_A14_PERFORMANCE_AUDIT.md)
 - **Release procedure:** create a tag named `android-vX.Y.Z` on the commit to publish; the Android workflow must pass before the APK is attached to that release.
 
-> Releases are development milestones until an on-device launch and gameplay test is recorded. APK artifacts from untagged commits remain available in their corresponding Actions run. A stable signing key is required for seamless install-over updates across releases.
+> Android APKs are development builds until signed with the stable release key and validated on target devices. Untagged APK artifacts are available from their corresponding Actions runs. A stable signing key is required for seamless install-over updates across releases.
 <!-- PROJECT_STATUS_END -->
 
+An Android-focused GTA IV recompilation project based on the Xbox 360 release. The Android app uses the pinned XHYN/ReXGlue Android port as its gameplay runtime.
 
-An Android-focused GTA IV recompilation project based on the Xbox 360 release. This repository is under active integration work.
-
-> **Important runtime status:** The current Android APK is a launcher/support build, not yet a playable GTA IV port. The ReXGlue runtime, generated PowerPC game code, real Vulkan device backend, and complete XEX/TU8 installation pipeline are not yet integrated into this repository's Android build.
+> **Android runtime status:** The Android workflow builds the pinned XHYN native GTA IV runtime, SDL3, Vulkan renderer/driver components, installer, and launcher into an ARM64 APK. Physical-device testing has reached gameplay on a Samsung Galaxy A14 5G, but performance and memory stability are not yet acceptable; low-memory termination and a separate native signal-11 exit remain under investigation.
 
 ## Android build
 
 - Target ABI: `arm64-v8a`
 - Minimum Android API: 29
 - Android build workflow: [GitHub Actions](https://github.com/OMPergo/gta4-universal-/actions)
-- APK size target: 100 MiB maximum for the application package; game data remains separate.
+- The workflow checks out the pinned XHYN submodule, runs its dependency setup, builds the native runtime and driver proxy, stages native libraries/resources, then packages the app with Gradle.
+- APK size ceiling: 200,000,000 bytes; game data remains separate.
 
-A successful CI build proves that the current Android application and support library compile. It does **not** prove that GTA IV gameplay works or that a device is compatible.
+A successful CI build proves that native libraries and the Android APK compile and pass packaging checks. It does **not** prove that a device can sustain gameplay without crashes, stutter, or thermal/memory pressure.
+
+## Two native code layers
+
+- **Gameplay runtime:** built from the pinned `vendor/XHYN-IV-recomp` submodule using its ReXGlue/SDL3 Android build scripts. This supplies the actual game entry point, renderer, and installer libraries packaged into the Android APK.
+- **Universal support core:** the root `CMakeLists.txt` builds `LibertyUniversalCore` for hardware diagnostics, performance-tier experiments, GPU flags, multiplayer scaffolding, media-ID helpers, and a separate JNI bridge. It is not the game's main execution library and its configuration values must not be assumed to control the upstream renderer.
+
+See [Implementation Status](docs/IMPLEMENTATION_STATUS.md), [Android Runtime Integration Audit](docs/ANDROID_RUNTIME_GAP_AUDIT.md), and [Android A14 Performance Audit](docs/ANDROID_A14_PERFORMANCE_AUDIT.md).
 
 ## Game data
 
-This project does not distribute copyrighted GTA IV game assets. A future playable build will require users to supply compatible game data and the matching Title Update. The current code only checks for the presence of `default.xex`; it does not yet parse its real Title ID / Media ID or validate TU8 contents. Do not treat the present installer/runtime status as game-data verification.
+This project does not distribute copyrighted GTA IV game assets. The Android installer expects the user to supply compatible game data and the required Title Update. The native installer is packaged as `libliberty_install.so`; the root support-core media-ID helper is separate and is not a substitute for the native installer’s complete validation path.
 
-## Current implementation
+## iOS status
 
-- Hardware capability reporting and performance-tier selection.
-- GPU compatibility/workaround configuration.
-- Multiplayer packet/session scaffolding.
-- Android JNI bridge and ARM64 support-library build.
-- Early game-data detection.
-
-## Not yet integrated
-
-- ReXGlue guest runtime and Xbox 360 kernel/XAM compatibility.
-- Generated GTA IV PowerPC translation units and actual game entry point.
-- Real Vulkan instance/device/queue/swapchain initialization and renderer.
-- XEX metadata parsing and verified Title Update 8 application.
-- Complete game-data extraction and launch lifecycle.
-- End-to-end gameplay validation on physical Android devices.
-
-See [Implementation Status](docs/IMPLEMENTATION_STATUS.md) and [Android Runtime Gap Audit](docs/ANDROID_RUNTIME_GAP_AUDIT.md) for the verified status and next steps.
+The iOS target currently builds a SwiftUI launcher/game-folder manager shell. It does not yet contain the Android ReXGlue/SDL3 runtime or an iOS-compatible native gameplay backend. A successful iOS launcher build is not a playable GTA IV iOS port.
