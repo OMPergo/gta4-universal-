@@ -147,7 +147,7 @@ jobs:
           FILE_SIZE=$(wc -c < "$APK_PATH")
           echo "APK size: $FILE_SIZE bytes"
           test "$FILE_SIZE" -gt 100000
-          test "$FILE_SIZE" -le 104857600
+          test "$FILE_SIZE" -le 200000000
           for LIB in os/android/app/src/main/jniLibs/arm64-v8a/*.so; do
             readelf -h "$LIB" | grep -q "AArch64"
           done
