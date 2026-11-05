@@ -1,0 +1,25 @@
+name: GTAIVUniversal
+options:
+  bundleIdPrefix: com.ompergo
+  deploymentTarget:
+    iOS: "15.0"
+settings:
+  base:
+    PRODUCT_BUNDLE_IDENTIFIER: com.ompergo.gtaivuniversal
+    PRODUCT_NAME: GTA IV Universal
+    SWIFT_VERSION: "5.0"
+    TARGETED_DEVICE_FAMILY: "1"
+    INFOPLIST_KEY_CFBundleDisplayName: GTA IV Universal
+    INFOPLIST_KEY_UILaunchScreen_Generation: YES
+    GENERATE_INFOPLIST_FILE: YES
+targets:
+  GTAIVUniversal:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+    settings:
+      base:
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_REQUIRED: NO
+        IPHONEOS_DEPLOYMENT_TARGET: "15.0"
