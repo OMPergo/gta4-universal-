@@ -4,14 +4,14 @@
 ## Project status and downloads
 
 - **Build status:** [![Android ARM64 CI](https://github.com/OMPergo/gta4-universal-/actions/workflows/android.yml/badge.svg?branch=friday%2Fandroid-runtime-audit)](https://github.com/OMPergo/gta4-universal-/actions/workflows/android.yml)
-- **Latest tagged releases:** [GitHub Releases](https://github.com/OMPergo/gta4-universal-/releases)
+- **Latest Android APK (public direct download):** [Download app-debug.apk](https://github.com/OMPergo/gta4-universal-/releases/download/android-latest/app-debug.apk)\n- **Latest Android release page:** [GTA IV Universal — Latest Android Build](https://github.com/OMPergo/gta4-universal-/releases/tag/android-latest)\n- **Versioned releases:** [GitHub Releases](https://github.com/OMPergo/gta4-universal-/releases)
 - **Every build and its logs:** [GitHub Actions](https://github.com/OMPergo/gta4-universal-/actions)
 - **Commit history:** [Friday integration branch](https://github.com/OMPergo/gta4-universal-/commits/friday/android-runtime-audit)
 - **Known issues and regression-prevention ledger:** [Build Failure Ledger](docs/BUILD_FAILURE_LEDGER.md)
 - **Galaxy A14 5G findings and recommended test profile:** [Android A14 Performance Audit](docs/ANDROID_A14_PERFORMANCE_AUDIT.md)
-- **Release procedure:** create a tag named `android-vX.Y.Z` on the commit to publish; the Android workflow must pass before the APK is attached to that release.
+- **Automatic latest build:** every successful Android push build on this integration branch refreshes the public `android-latest` release and replaces its APK/checksum assets. Versioned `android-vX.Y.Z` releases remain available separately.
 
-> Android APKs are development builds until signed with the stable release key and validated on target devices. Untagged APK artifacts are available from their corresponding Actions runs. A stable signing key is required for seamless install-over updates across releases.
+> The `android-latest` link is a shared development APK for contributors. It is refreshed only after CI succeeds. It is not yet a stable signed release; until a stable signing key is configured, updates from different builds may require a data-safe reinstall.
 <!-- PROJECT_STATUS_END -->
 
 An Android-focused GTA IV recompilation project based on the Xbox 360 release. The Android app uses the pinned XHYN/ReXGlue Android port as its gameplay runtime.
