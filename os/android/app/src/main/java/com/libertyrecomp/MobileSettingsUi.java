@@ -194,6 +194,30 @@ final class MobileSettingsUi {
             if(selected[0].equals("Overlay")&&query.isEmpty()){ModernUi.gridAction(a,rows,"Edit overlay",()->OverlayEditorUi.show(a,draft,()->{updatePending.run();render[0].run();rows.post(()->{View launch=rows.findViewWithTag("overlay-editor-launch");if(launch!=null)launch.requestFocus();});})).setTag("overlay-editor-launch");}
             if(selected[0].equals("Performance")&&query.isEmpty()&&runtime!=null)rows.addView(ModernUi.text(a,ThermalStatus.summary(runtime.get("gta4_thermal_status"),System.nanoTime(),false),12,ModernUi.ACCENT));
             if(selected[0].equals("Performance")&&query.isEmpty())ModernUi.gridAction(a,rows,"Balanced settings",()->{draft.put("android_gpu_turbo","false");draft.put("android_thermal_guard","true");draft.put("ui_battery_refresh","true");if(sustainedSupported(a))draft.put("ui_sustained","true");draft.put("audio_low_latency","false");updatePending.run();render[0].run();});
+            if(selected[0].equals("Performance")&&query.isEmpty())ModernUi.gridAction(a,rows,"A14 low-memory preset",()->{
+                draft.put("resolution","540p");
+                draft.put("gta4_native_upscaler","fsr1");
+                draft.put("gta4_fsr1_quality","balanced");
+                draft.put("gta4_frame_limit","30");
+                draft.put("gta4_dynamic_draw_distance","true");
+                draft.put("gta4_draw_distance_scale","0.60");
+                draft.put("gta4_native_shadow_interval","0");
+                draft.put("gta4_reflection_resolution","quarter");
+                draft.put("gta4_water_reflection_resolution","quarter");
+                draft.put("gta4_mirror_reflection_resolution","quarter");
+                draft.put("gta4_reflection_aa","off");
+                draft.put("gta4_reflection_capture_distance","near");
+                draft.put("gta4_native_water_reflection_interval","2");
+                draft.put("gta4_native_environment_reflection_interval","2");
+                draft.put("gta4_native_pipeline_workers","2");
+                draft.put("gta4_native_pipeline_prewarm","true");
+                draft.put("gta4_native_pipeline_lookahead","true");
+                draft.put("gta4_native_texture_reuse_extended","false");
+                draft.put("gta4_native_converted_texture_disk_cache","true");
+                draft.put("android_gpu_turbo","false");
+                draft.put("android_thermal_guard","true");
+                updatePending.run();render[0].run();
+            });
             if(selected[0].equals("Controller")&&query.isEmpty()){ModernUi.gridAction(a,rows,"Test controller",()->ControllerTestUi.show(a));ModernUi.gridAction(a,rows,"Controller presets",()->ModernUi.choose(a,"Controller preset",new String[]{"Linear response","Reduce stick drift","Restore controller defaults"},-1,n->{if(n==0)draft.put("gamepad_response_curve","1");else if(n==1){draft.put("gamepad_left_deadzone","0.12");draft.put("gamepad_right_deadzone","0.12");}else for(Choice c:TOUCH)if(c.key.startsWith("gamepad_"))draft.put(c.key,c.initial);updatePending.run();render[0].run();}));}
             if(selected[0].equals("Touch controls")&&query.isEmpty()&&editor!=null){ModernUi.gridAction(a,rows,"Edit mobile controls",()->{if(commit.getAsBoolean()){state.scroll.put(selected[0],scroll.getScrollY());if(runtime!=null){current[0].setOnDismissListener(null);current[0].dismiss();}editor.accept(false);}});}
             for(Choice c:choices){if(c.key.startsWith("gta4_overlay_"))continue;if(query.isEmpty()?!category(c).equals(selected[0]):!(c.label+" "+guide(c.key)).toLowerCase(Locale.ROOT).contains(query))continue;count++;
