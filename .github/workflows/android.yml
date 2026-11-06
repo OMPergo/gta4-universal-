@@ -198,6 +198,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG_NAME="android-latest"
+          # Multiple commits can build concurrently. Never let an older run
+          # replace the public latest APK after a newer commit has landed.
+          git fetch origin "$GITHUB_REF_NAME"
+          BRANCH_HEAD="$(git rev-parse FETCH_HEAD)"
+          if [ "$BRANCH_HEAD" != "$GITHUB_SHA" ]; then
+            echo "Skipping release publish: this run is stale ($GITHUB_SHA; branch is $BRANCH_HEAD)."
+            exit 0
+          fi
           APK_PATH="os/android/app/build/outputs/apk/debug/app-debug.apk"
           APK_SHA256="$(sha256sum "$APK_PATH" | cut -d' ' -f1)"
           # Keep one stable public tag pointing at the newest successful branch build.
