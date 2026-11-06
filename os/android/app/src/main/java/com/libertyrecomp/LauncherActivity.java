@@ -172,37 +172,6 @@ public class LauncherActivity extends Activity {
         return false;
     }
 
-    /** A small GitHub mark and the author's name, opening the project page. */
-    private View buildGithubFooter() {
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER);
-        row.setPadding(dp(8), dp(4), dp(8), dp(4));
-        ImageView mark = new ImageView(this);
-        mark.setImageResource(R.drawable.ic_github);
-        row.addView(mark, new LinearLayout.LayoutParams(dp(16), dp(16)));
-        TextView name = text("vaduur", 13, R.color.picker_muted);
-        LinearLayout.LayoutParams nameParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        nameParams.leftMargin = dp(6);
-        row.addView(name, nameParams);
-        row.setFocusable(true);
-        row.setBackground(focusBackground(Color.TRANSPARENT));
-        row.setOnClickListener(v -> {
-            try {
-                startActivity(new Intent(Intent.ACTION_VIEW,
-                        Uri.parse("https://github.com/vaduur/LibertyRecompAndroid")));
-            } catch (Exception e) {
-                toast("github.com/vaduur/LibertyRecompAndroid");
-            }
-        });
-        LinearLayout wrapper = new LinearLayout(this);
-        wrapper.setGravity(Gravity.CENTER);
-        wrapper.addView(row, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT));
-        return wrapper;
-    }
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -253,7 +222,10 @@ public class LauncherActivity extends Activity {
         launcherAction(actions,"Touch controls","touch",this::showTouchSettings);launcherAction(actions,"Drivers","driver",this::showDriverPanel);
 
         block.addView(actions,matchWrap(dp(2)));
-        LinearLayout footer=new LinearLayout(this);footer.setGravity(Gravity.CENTER_VERTICAL);footer.addView(ModernUi.text(this,versionLine(),11,ModernUi.MUTED),new LinearLayout.LayoutParams(-2,-2));LinearLayout links=new LinearLayout(this);links.setGravity(Gravity.END|Gravity.CENTER_VERTICAL);addFooterLink(links,"YouTube ↗","https://youtube.com/@xhyn_ph");addFooterLink(links,"Telegram ↗","https://t.me/xhynports");addFooterLink(links,"GitHub ↗","https://github.com/XHYN-PH/XHYN-IV-recomp");HorizontalScrollView linkStrip=new HorizontalScrollView(this);linkStrip.setHorizontalScrollBarEnabled(false);linkStrip.setFillViewport(true);linkStrip.addView(links);footer.addView(linkStrip,new LinearLayout.LayoutParams(0,-2,1));root.addView(footer,matchWrap(dp(3)));
+        // Keep the footer neutral until GTA IV Universal's official links are added.
+        LinearLayout footer=new LinearLayout(this);footer.setGravity(Gravity.CENTER_VERTICAL);
+        footer.addView(ModernUi.text(this,versionLine(),11,ModernUi.MUTED),new LinearLayout.LayoutParams(-2,-2));
+        root.addView(footer,matchWrap(dp(3)));
         if(getResources().getDisplayMetrics().widthPixels>getResources().getDisplayMetrics().heightPixels){
             LinearLayout achievements=ModernUi.panel(this);achievements.setBackground(ModernUi.surface(this,0xc4181a1c,12));
             achievements.addView(ModernUi.text(this,"ACHIEVEMENTS",11,ModernUi.ACCENT));mAchievementSummary=ModernUi.text(this,"Prepare the installed game’s achievement list",14,ModernUi.TEXT);mAchievementSummary.setPadding(0,dp(6),0,dp(6));achievements.addView(mAchievementSummary);
@@ -264,11 +236,6 @@ public class LauncherActivity extends Activity {
         }
         footer.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob)->artwork.setNavigationTop(root.getTop()+footer.getTop()));
         ModernUi.enter(this,block,0);buildSecondaryPanels();return canvas;
-    }
-    private void addFooterLink(LinearLayout links,String label,String url){
-        TextView link=ModernUi.text(this,label,12,ModernUi.ACCENT);link.setPadding(dp(10),dp(4),dp(3),0);link.setMinHeight(dp(24));link.setGravity(Gravity.CENTER);link.setSingleLine(true);
-        link.setContentDescription(label+", "+url);
-        link.setFocusable(true);link.setOnClickListener(v->{try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(url)));}catch(Exception ignored){toast(url);}});links.addView(link);
     }
     private void launcherAction(LinearLayout grid,String label,String icon,Runnable action){
         LinearLayout row=grid.getChildCount()>0?(LinearLayout)grid.getChildAt(grid.getChildCount()-1):null;
