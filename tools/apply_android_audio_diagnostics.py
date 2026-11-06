@@ -93,14 +93,6 @@ void AndroidAudioDiag(const char*, const char* = "") {}
     )
     source = replace_once(
         source,
-      "Opened playback stream with {} input channels; device is {} Hz, {} channels, " """,
-        """  AndroidAudioDiag("playback_stream_opened");
-  REXAPU_INFO(
-      "Opened playback stream with {} input channels; device is {} Hz, {} channels, \"""",
-        "stream opened",
-    )
-    source = replace_once(
-        source,
         "  if (!SDL_ResumeAudioStreamDevice(sdl_stream_)) {\n",
         """  if (!SDL_ResumeAudioStreamDevice(sdl_stream_)) {
     AndroidAudioDiag("stream_resume_failed", SDL_GetError());
