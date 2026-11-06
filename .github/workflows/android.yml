@@ -78,7 +78,10 @@ jobs:
 
       - name: Apply bounded Mali texture decode worker pool
         run: python3 tools/apply_mali_decode_pool.py
-\n      - name: Apply Android audio initialization diagnostics (no audio behavior changes)\n        run: python3 tools/apply_android_audio_diagnostics.py\n
+
+      - name: Apply Android audio initialization diagnostics (no audio behavior changes)
+        run: python3 tools/apply_android_audio_diagnostics.py
+
       - name: Build Android Vulkan driver proxy and hooks
         run: |
           export ANDROID_HOME="$ANDROID_SDK_ROOT"
@@ -200,7 +203,16 @@ jobs:
           # Keep one stable public tag pointing at the newest successful branch build.
           git tag -f "$TAG_NAME" "$GITHUB_SHA"
           git push origin "refs/tags/$TAG_NAME" --force
-          printf '# GTA IV Universal — Latest Android Build\\n\\n- Source branch: %s\\n- Commit: %s\\n- Android ABI: arm64-v8a\\n- CI validation: passed\\n- APK SHA-256: %s\\n\\nThis page is automatically refreshed after each successful Android push build. This is a development/test APK, not a stable signed release.\\n' "$GITHUB_REF_NAME" "$GITHUB_SHA" "$APK_SHA256" > release-notes.md
+          printf '# GTA IV Universal — Latest Android Build\
+\
+- Source branch: %s\
+- Commit: %s\
+- Android ABI: arm64-v8a\
+- CI validation: passed\
+- APK SHA-256: %s\
+\
+This page is automatically refreshed after each successful Android push build. This is a development/test APK, not a stable signed release.\
+' "$GITHUB_REF_NAME" "$GITHUB_SHA" "$APK_SHA256" > release-notes.md
           if ! gh release view "$TAG_NAME" >/dev/null 2>&1; then
             gh release create "$TAG_NAME" --title "GTA IV Universal — Latest Android Build" --notes-file release-notes.md --target "$GITHUB_SHA"
           fi
@@ -215,5 +227,14 @@ jobs:
           TAG_NAME="$GITHUB_REF_NAME"
           APK_PATH="os/android/app/build/outputs/apk/debug/app-debug.apk"
           APK_SHA256="$(sha256sum "$APK_PATH" | cut -d' ' -f1)"
-          printf '## %s\n\n- Commit: %s\n- Android ABI: arm64-v8a\n- CI: successful\n- APK SHA-256: %s\n- APK: attached below\n\nThis is an automated development build. Until a stable release-signing key is configured, APKs from different workflow runs may not install as in-place updates over one another.\n' "$TAG_NAME" "$GITHUB_SHA" "$APK_SHA256" > release-notes.md
+          printf '## %s
+
+- Commit: %s
+- Android ABI: arm64-v8a
+- CI: successful
+- APK SHA-256: %s
+- APK: attached below
+
+This is an automated development build. Until a stable release-signing key is configured, APKs from different workflow runs may not install as in-place updates over one another.
+' "$TAG_NAME" "$GITHUB_SHA" "$APK_SHA256" > release-notes.md
           gh release create "$TAG_NAME" "$APK_PATH" --title "GTA IV Universal $TAG_NAME" --notes-file release-notes.md
