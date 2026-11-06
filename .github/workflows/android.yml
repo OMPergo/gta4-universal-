@@ -76,6 +76,9 @@ jobs:
           test -f vendor/XHYN-IV-recomp/tools/XenosRecomp/CMakeLists.txt
           test -f vendor/XHYN-IV-recomp/glue/rexglue-sdk-main/gta4-recomp/generated/sources.cmake
 
+      - name: Apply bounded Mali texture decode worker pool
+        run: python3 tools/apply_mali_decode_pool.py
+
       - name: Build Android Vulkan driver proxy and hooks
         run: |
           export ANDROID_HOME="$ANDROID_SDK_ROOT"
