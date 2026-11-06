@@ -78,3 +78,17 @@ The practical next implementation sequence is therefore:
 4. Add unit tests for six independently enabled planes, sparse enable masks, plane-equation changes, clip-disable, and cull-only mode before enabling the fallback.
 
 This follow-up is source tracing only. No renderer code or device behavior has been changed by this commit.
+
+
+## Native pipeline rejection and exact data-flow findings
+
+A direct trace through the 2.1 MB native renderer translation unit confirms the active rejection path:
+
+- `graphics_system.cpp` rejects a draw with `shader-clip-distance-unsupported` when the draw's user-clip enable mask is nonzero and Vulkan reports `shaderClipDistance == false` (around line 22412 at the pinned source revision).
+- The same native path rejects additional enabled planes and cull-only combinations through `HasUnsupportedNativeUserClipPlanes` before reaching that feature check.
+- The native state decoder reads only four 32-bit words beginning at `kClipPlane0Offset` into `clip_plane_bits[4]` (around line 4357). The native shared-constant block has only one `float4 clip_plane` and one enable byte. The per-draw shared-constant writer copies those four words and sets the enable from bit 0 (around line 23900).
+- The fixed-state hash includes the clip-control word, enable mask, and those four plane words (around line 957), so any expansion must update the hash/key and snapshot data consistently.
+
+This narrows the Mali bug: it is not just a missing Vulkan feature. The native backend's supported semantic subset is currently one user plane, while the game register model exposes six. The current code rejects that supported plane on Mali rather than silently submitting an invalid pipeline. A correct native fallback must carry the plane equation to shader code and evaluate it without `gl_ClipDistance`; merely changing the rejection condition would produce incorrect output.
+
+The legacy Xenia translator is useful as a reference for the source of truth (enabled plane equations in `PA_CL_UCP_#`, guest-space vertex position, dot-product distance), but it belongs to a different renderer path and cannot be copied into the native pipeline as-is. Its cull-distance fallback is also not equivalent to primitive clipping for ordinary clip-plane mode.
