@@ -86,7 +86,7 @@ public class LauncherActivity extends Activity {
     private static final int SOURCE_TLAD = 2;
     private static final int SOURCE_TBOGT = 3;
     private static final String[] SOURCE_LABELS = {
-            "Base game (disc image .iso)", "Title Update 8", "The Lost and Damned (optional)",
+            "Base game (disc image .iso)", "Title Update 8 (.zip or Xbox package)", "The Lost and Damned (optional)",
             "The Ballad of Gay Tony (optional)"};
 
     private File mDataRoot;
@@ -97,6 +97,7 @@ public class LauncherActivity extends Activity {
     private final List<String> mDriverModes = new ArrayList<>();
     private final Handler mMain = new Handler(Looper.getMainLooper());
     private boolean mBusy;
+    private boolean mPreparingUpdate;
 
     private final ControllerNavigation menuNavigation=new ControllerNavigation();
     @Override public boolean dispatchGenericMotionEvent(android.view.MotionEvent e){return menuNavigation.motion(getWindow(),e)||super.dispatchGenericMotionEvent(e);}
@@ -667,7 +668,7 @@ public class LauncherActivity extends Activity {
         mInstallTitle.setText(mInstalled ? "Game installed" : "Install the game");
         mInstallNote.setText(mInstalled
                 ? "GTA IV with Title Update 8 is installed and ready."
-                : "You need your own USA disc image and Title Update 8 (0.0.8.5)."
+                : "You need your own USA disc image and Title Update 8 (0.0.8.5). Select the .iso directly; it does not need to be opened or extracted. A regional TU8 ZIP can be selected here; the USA 6AC07221 package is staged automatically."
                         + (reason != null && !reason.equals("not installed")
                         && new File(Installer.installRoot(mDataRoot), "game").exists()
                         ? "\nCurrent installation: " + reason : ""));
@@ -691,10 +692,10 @@ public class LauncherActivity extends Activity {
         boolean episodesOnly = mInstalled && mSources[SOURCE_GAME] == null
                 && mSources[SOURCE_UPDATE] == null
                 && (mSources[SOURCE_TLAD] != null || mSources[SOURCE_TBOGT] != null);
-        boolean canInstall = !running && !mInspecting && (gameReady || episodesOnly);
+        boolean canInstall = !running && !mInspecting && !mPreparingUpdate && (gameReady || episodesOnly);
         mInstall.setEnabled(canInstall);
         mInstall.setAlpha(canInstall ? 1f : 0.4f);
-        mInstall.setText(episodesOnly ? "Install episodes" : "Install");
+        mInstall.setText(mPreparingUpdate ? "Preparing update..." : (episodesOnly ? "Install episodes" : "Install"));
         mCancelInstall.setVisibility(running ? View.VISIBLE : View.GONE);
         mSourceRows.setVisibility(running ? View.GONE : View.VISIBLE);
         mInstall.setVisibility(running ? View.GONE : View.VISIBLE);
@@ -714,7 +715,8 @@ public class LauncherActivity extends Activity {
             if (!file.isFile() || file.getName().startsWith(".")) continue;
             if (file.getName().toLowerCase(Locale.ROOT).endsWith(".iso")) {
                 if (disc == null) disc = file;
-            } else if (update == null || file.length() > update.length()) {
+            } else if (!file.getName().toLowerCase(Locale.ROOT).endsWith(".zip")
+                    && (update == null || file.length() > update.length())) {
                 update = file;
             }
         }
@@ -748,6 +750,10 @@ public class LauncherActivity extends Activity {
 
     @SuppressWarnings("deprecation")
     private void chooseSource(int index) {
+        if (mPreparingUpdate) {
+            toast("Wait for the Title Update ZIP to finish preparing.");
+            return;
+        }
         if (!Installer.hasFileAccess(this)) {
             ModernUi.builder(this)
                     .setTitle("Allow file access")
@@ -779,6 +785,35 @@ public class LauncherActivity extends Activity {
         }
         if (!new File(path).canRead()) {
             toast("Cannot read " + path + ". Check that file access is allowed.");
+            return;
+        }
+        if (index == SOURCE_UPDATE && path.toLowerCase(Locale.ROOT).endsWith(".zip")) {
+            if (mPreparingUpdate) return;
+            mPreparingUpdate = true;
+            updateInstallViews(null);
+            toast("Preparing the USA Title Update 8 package...");
+            new Thread(() -> {
+                File prepared = null;
+                String failure = null;
+                try {
+                    prepared = Installer.extractUsaTu8Package(this, path);
+                } catch (IOException | RuntimeException error) {
+                    failure = error.getMessage();
+                }
+                final File result = prepared;
+                final String errorMessage = failure;
+                mMain.post(() -> {
+                    mPreparingUpdate = false;
+                    if (result != null) {
+                        setSource(index, result.getAbsolutePath());
+                        toast("USA Title Update 8 (6AC07221) is ready.");
+                    } else {
+                        toast("Could not prepare Title Update 8: "
+                                + (errorMessage == null ? "unknown error" : errorMessage));
+                    }
+                    updateInstallViews(null);
+                });
+            }, "PrepareTitleUpdate").start();
             return;
         }
         setSource(index, path);

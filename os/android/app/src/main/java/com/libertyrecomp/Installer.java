@@ -19,6 +19,13 @@ import android.util.Log;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.util.Enumeration;
+import java.util.Locale;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 /**
  * The game installer for the launcher: the same native code as the in-game
@@ -102,6 +109,98 @@ final class Installer {
                     json.optString("diagnostics"));
         } catch (Exception e) {
             return new Inspection(false, "The source could not be checked: " + e.getMessage(), "");
+        }
+    }
+
+
+    /**
+     * Accepts the user's regional TU8 ZIP and stages only the USA 6AC07221
+     * STFS package. The native installer still verifies the actual XEXP hash,
+     * title ID, base revision, and source signature before installation.
+     */
+    static File extractUsaTu8Package(Context context, String archivePath) throws java.io.IOException {
+        File archive = new File(archivePath);
+        if (!archive.isFile() || !archive.canRead()) {
+            throw new java.io.IOException("The selected Title Update ZIP cannot be read.");
+        }
+
+        final long maxPackageBytes = 16L * 1024L * 1024L;
+        File directory = new File(context.getFilesDir(), "title-updates/tu8");
+        if (!directory.isDirectory() && !directory.mkdirs()) {
+            throw new java.io.IOException("Could not create the app's Title Update staging folder.");
+        }
+
+        try (ZipFile zip = new ZipFile(archive)) {
+            ZipEntry selected = null;
+            Enumeration<? extends ZipEntry> entries = zip.entries();
+            while (entries.hasMoreElements()) {
+                ZipEntry entry = entries.nextElement();
+                if (entry.isDirectory()) continue;
+                String upper = entry.getName().toUpperCase(Locale.ROOT);
+                int slash = upper.lastIndexOf('/');
+                String baseName = slash >= 0 ? upper.substring(slash + 1) : upper;
+                if (upper.contains("6AC07221") && baseName.startsWith("TU_")) {
+                    if (selected != null) {
+                        throw new java.io.IOException("The ZIP contains more than one USA 6AC07221 update package.");
+                    }
+                    if (entry.getSize() > maxPackageBytes) {
+                        throw new java.io.IOException("The USA Title Update package is larger than expected.");
+                    }
+                    selected = entry;
+                }
+            }
+            if (selected == null) {
+                throw new java.io.IOException(
+                        "No USA TU8 package (Media ID 6AC07221) was found in this ZIP. "
+                        + "Choose the regional TU8 ZIP or select the USA package file directly.");
+            }
+
+            File temporary = new File(directory, "TU8-USA-6AC07221.live.tmp");
+            File output = new File(directory, "TU8-USA-6AC07221.live");
+            long copied = 0;
+            try (InputStream input = zip.getInputStream(selected);
+                 FileOutputStream stream = new FileOutputStream(temporary, false)) {
+                byte[] buffer = new byte[64 * 1024];
+                int count;
+                while ((count = input.read(buffer)) != -1) {
+                    copied += count;
+                    if (copied > maxPackageBytes) {
+                        throw new java.io.IOException("The USA Title Update package exceeded the safe size limit.");
+                    }
+                    stream.write(buffer, 0, count);
+                }
+                stream.getFD().sync();
+            } catch (java.io.IOException error) {
+                //noinspection ResultOfMethodCallIgnored
+                temporary.delete();
+                throw error;
+            }
+
+            byte[] magic = new byte[4];
+            try (InputStream input = new FileInputStream(temporary)) {
+                if (input.read(magic) != magic.length
+                        || magic[0] != 'L' || magic[1] != 'I' || magic[2] != 'V' || magic[3] != 'E') {
+                    //noinspection ResultOfMethodCallIgnored
+                    temporary.delete();
+                    throw new java.io.IOException("The selected USA update entry is not a valid Xbox LIVE/STFS package.");
+                }
+            }
+            if (copied < 1024) {
+                //noinspection ResultOfMethodCallIgnored
+                temporary.delete();
+                throw new java.io.IOException("The USA Title Update package is unexpectedly small.");
+            }
+            if (output.exists() && !output.delete()) {
+                temporary.delete();
+                throw new java.io.IOException("Could not replace the previously staged Title Update.");
+            }
+            if (!temporary.renameTo(output)) {
+                temporary.delete();
+                throw new java.io.IOException("Could not finish staging the USA Title Update package.");
+            }
+            return output;
+        } catch (java.util.zip.ZipException error) {
+            throw new java.io.IOException("The selected file is not a readable ZIP archive.", error);
         }
     }
 
