@@ -57,3 +57,24 @@ Priority:
 ## Current state
 
 This branch records the source-level findings and safe implementation plan only. It intentionally does not claim a clipping fix or performance gain. The next code change must be made at the native shader input/variant boundary where the plane equations and clip-space position are available, not by changing only the SPIR-V declaration scrubber.
+
+
+## Follow-up source trace (2026-11-06)
+
+The source trace found an existing user-clip-plane implementation in the legacy Xenia/ReXGlue Vulkan backend, but it is not a drop-in fix for the native GTA renderer:
+
+- `graphics/vulkan/pipeline_cache.cpp` selects user clip planes from Xenos `PA_CL_CLIP_CNTL`, packs the active plane count, and can route the distances to `gl_CullDistance` when `shaderClipDistance` is absent but `shaderCullDistance` is present.
+- `graphics/vulkan/command_processor.cpp` copies the enabled Xenos `PA_CL_UCP_#` plane equations into the legacy backend's system-constant block.
+- `graphics/pipeline/shader/spirv_translator.cpp` computes each distance as the dot product of the guest-space formatted vertex position and the corresponding plane equation before the guest-to-host NDC transform.
+- That fallback is not proof of exact clipping parity: cull-distance semantics can discard a whole primitive, while clip-distance semantics clip primitive boundaries. It must not be described as an exact replacement for clipping.
+
+The native GTA renderer has a separate state path. Its `core/draw_state.h` currently decodes only four words for plane 0 into `FixedFunctionState::clip_plane_bits`; the native shared constants likewise expose a single `clip_plane[4]`. The native fixed-function state also carries a six-bit enable mask. This means a complete multi-plane fallback first needs the native capture/state/constant interface expanded to retain all enabled plane equations, then a native shader-stage implementation that evaluates them with the correct guest-space position. Copying only the legacy backend's pipeline-cache switch would not fix the native path.
+
+The practical next implementation sequence is therefore:
+
+1. Map the native draw capture and native pipeline/shader creation path, including where `NativeFixedFunctionState` is decoded, hashed, and uploaded.
+2. Expand the captured plane-equation data without changing the existing constant-buffer ABI for unrelated shaders; version or append the new native data deliberately.
+3. Choose a semantics-preserving fallback supported by the target device. If exact primitive clipping cannot be achieved in the current native shader architecture, keep the draw rejected with an explicit reason rather than silently rendering it incorrectly.
+4. Add unit tests for six independently enabled planes, sparse enable masks, plane-equation changes, clip-disable, and cull-only mode before enabling the fallback.
+
+This follow-up is source tracing only. No renderer code or device behavior has been changed by this commit.
