@@ -77,29 +77,64 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO build
 
-      - name: Package unsigned universal IPA
+      - name: Validate and package iOS outputs
+        shell: bash
         run: |
-          APP="build/ios-device/Build/Products/Release-iphoneos/GTAIVUniversal.app"
-          test -d "$APP"
-          mkdir -p build/ipa/Payload
-          cp -R "$APP" build/ipa/Payload/
-          cd build/ipa
-          /usr/bin/zip -qry ../../GTA-IV-Universal-iOS-iPadOS-unsigned.ipa Payload
-          cd ../..
-          test -s GTA-IV-Universal-iOS-iPadOS-unsigned.ipa
-          shasum -a 256 GTA-IV-Universal-iOS-iPadOS-unsigned.ipa > ios-ipa-sha256.txt
-          echo "## GTA IV Universal — iPhone and iPad build" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Unsigned universal device IPA packaged successfully. It requires signing before installation." >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "The launcher shell is built for both iPhone and iPad. GTA IV engine/runtime integration is not yet complete." >> "$GITHUB_STEP_SUMMARY"
+          set -euo pipefail
+          DEVICE_APP="build/ios-device/Build/Products/Release-iphoneos/GTAIVUniversal.app"
+          SIM_APP="build/ios-simulator-iphone/Build/Products/Release-iphonesimulator/GTAIVUniversal.app"
+          test -d "$DEVICE_APP"
+          test -d "$SIM_APP"
 
-      - name: Upload iOS and iPadOS build
+          EXECUTABLE=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$DEVICE_APP/Info.plist")
+          BUNDLE_ID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$DEVICE_APP/Info.plist")
+          DEVICE_ARCHS=$(xcrun lipo -archs "$DEVICE_APP/$EXECUTABLE")
+          echo "Bundle identifier: $BUNDLE_ID"
+          echo "Device architectures: $DEVICE_ARCHS"
+          [[ " $DEVICE_ARCHS " == *" arm64 "* ]]
+
+          mkdir -p build/ipa/Payload
+          cp -R "$DEVICE_APP" build/ipa/Payload/
+          (cd build/ipa && /usr/bin/zip -qry ../../GTA-IV-Universal-iOS-iPadOS-unsigned.ipa Payload)
+          ditto -c -k --sequesterRsrc --keepParent "$SIM_APP" GTA-IV-Universal-iOS-Simulator.app.zip
+
+          mkdir -p build/ipa-check
+          unzip -q GTA-IV-Universal-iOS-iPadOS-unsigned.ipa -d build/ipa-check
+          test -f "build/ipa-check/Payload/GTAIVUniversal.app/$EXECUTABLE"
+          CHECK_BUNDLE_ID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "build/ipa-check/Payload/GTAIVUniversal.app/Info.plist")
+          test "$CHECK_BUNDLE_ID" = "$BUNDLE_ID"
+
+          cat > ios-build-manifest.txt <<EOF
+          Product: GTA IV Universal
+          Bundle ID: $BUNDLE_ID
+          Target: iPhone and iPad
+          Minimum iOS: 15.0
+          Device architectures: $DEVICE_ARCHS
+          Device package: unsigned IPA (requires Apple signing before installation)
+          Simulator package: simulator-only app archive
+          Gameplay runtime: not yet ported to iOS
+          Multiplayer: shared protocol/core integration not yet validated on iOS
+          EOF
+
+          shasum -a 256 GTA-IV-Universal-iOS-iPadOS-unsigned.ipa GTA-IV-Universal-iOS-Simulator.app.zip > ios-build-sha256.txt
+          {
+            echo "## GTA IV Universal — iPhone and iPad build"
+            echo ""
+            echo "- Bundle ID: `$BUNDLE_ID`"
+            echo "- Device architectures: `$DEVICE_ARCHS`"
+            echo "- Device IPA: unsigned; signing is required before installation."
+            echo "- Simulator app: separate simulator-only archive."
+            echo "- This is still the launcher shell; native gameplay and multiplayer are not yet integrated on iOS."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload iOS and iPadOS build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: gta4-universal-ios-ipados-unsigned
+          name: gta4-universal-ios-ipados-build
           path: |
             GTA-IV-Universal-iOS-iPadOS-unsigned.ipa
-            ios-ipa-sha256.txt
+            GTA-IV-Universal-iOS-Simulator.app.zip
+            ios-build-manifest.txt
+            ios-build-sha256.txt
           if-no-files-found: error
           retention-days: 30
