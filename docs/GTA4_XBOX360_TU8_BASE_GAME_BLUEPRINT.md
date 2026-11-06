@@ -78,3 +78,46 @@ The extracted disc root is reported as approximately 6.5 GB and roughly 170 file
 - ReXGlue project README: https://github.com/luisxl15/GTA-IV-RECOMP-XBOX-360
 
 These references document a compatible research/build workflow; they do not prove that every file requirement is already implemented in GTA4 Universal.
+
+
+## Verified USA TU8 package (2026-11-06)
+
+The evidence repository's package has now been structurally parsed using the STFS layout implemented by the pinned XHYN/ReXGlue source.
+
+- File: TU_1A581VI_000000K000000.0000000000205
+- Size: 3,715,072 bytes (matches the upstream TU8 v8 package-size entry)
+- SHA-256: b5d5ae820a7461db10048e44d6723fd4e4566b042932bedf60db2855bee95be4
+- STFS magic: LIVE
+- Content type: 0x000B0000 (Title Update installer)
+- Title ID: 0x545407F2
+- Media ID: 0x6AC07221 (USA)
+- Version/base version fields: 5 / 5
+- Parsed file-table entries: 22
+- STFS package signature: not cryptographically verified by this structural parser
+
+| Package entry | Size (bytes) |
+|---|---:|
+| default.xexp | 2,582,528 |
+| update.img | 831,488 |
+| frontend_360.dat | 14,289 |
+| frontend_menus.xml | 38,954 |
+| entityFx.dat | 15,650 |
+| rage_postfx_e1.dcl | 81 |
+| rage_postfx_e2.dcl | 81 |
+| water_e2.dcl | 49 |
+| rage_postfx_e1.fxc | 47,960 |
+| rage_postfx_e2.fxc | 52,429 |
+| water_e2.fxc | 10,582 |
+| american.gxt | 3,407 |
+| french.gxt | 3,891 |
+| german.gxt | 4,049 |
+| italian.gxt | 3,939 |
+| spanish.gxt | 3,850 |
+
+The package also has directory entries for data, shaders, text, effects, dcl, and fxl_final. The STFS parser exposes the 22 entries as a flat list; parent-directory reconstruction has not yet been independently validated. Per-file SHA-256 values are recorded in the evidence repository's AUDIT_REPORT.md.
+
+The upstream hash table lists the TU8 v8 package size as 3,715,072 bytes with a zero hash sentinel (meaning no package hash is enforced there). Matching the size, title ID, media ID, and file-table structure is strong compatibility evidence, but is not a substitute for RSA signature validation.
+
+## Runtime cross-check from the same device capture
+
+The 2026-11-06 Android capture identifies the game title as 545407F2 and logs repeated probes under game:/xbox360/audio/config as well as update:/shaders. Those base-game audio configuration files are not part of this TU8 package's file table; they must come from the base game/RPF extraction path. The detailed A14 findings are recorded in docs/ANDROID_A14_DIAGNOSTIC_20261106.md.
