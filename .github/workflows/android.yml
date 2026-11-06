@@ -203,16 +203,17 @@ jobs:
           # Keep one stable public tag pointing at the newest successful branch build.
           git tag -f "$TAG_NAME" "$GITHUB_SHA"
           git push origin "refs/tags/$TAG_NAME" --force
-          printf '# GTA IV Universal — Latest Android Build\
-\
-- Source branch: %s\
-- Commit: %s\
-- Android ABI: arm64-v8a\
-- CI validation: passed\
-- APK SHA-256: %s\
-\
-This page is automatically refreshed after each successful Android push build. This is a development/test APK, not a stable signed release.\
-' "$GITHUB_REF_NAME" "$GITHUB_SHA" "$APK_SHA256" > release-notes.md
+          cat > release-notes.md <<EOF
+          # GTA IV Universal — Latest Android Build
+
+          - Source branch: $GITHUB_REF_NAME
+          - Commit: $GITHUB_SHA
+          - Android ABI: arm64-v8a
+          - CI validation: passed
+          - APK SHA-256: $APK_SHA256
+
+          This page is automatically refreshed after each successful Android push build. This is a development/test APK, not a stable signed release.
+          EOF
           if ! gh release view "$TAG_NAME" >/dev/null 2>&1; then
             gh release create "$TAG_NAME" --title "GTA IV Universal — Latest Android Build" --notes-file release-notes.md --target "$GITHUB_SHA"
           fi
@@ -227,14 +228,15 @@ This page is automatically refreshed after each successful Android push build. T
           TAG_NAME="$GITHUB_REF_NAME"
           APK_PATH="os/android/app/build/outputs/apk/debug/app-debug.apk"
           APK_SHA256="$(sha256sum "$APK_PATH" | cut -d' ' -f1)"
-          printf '## %s
+          cat > release-notes.md <<EOF
+          ## $TAG_NAME
 
-- Commit: %s
-- Android ABI: arm64-v8a
-- CI: successful
-- APK SHA-256: %s
-- APK: attached below
+          - Commit: $GITHUB_SHA
+          - Android ABI: arm64-v8a
+          - CI: successful
+          - APK SHA-256: $APK_SHA256
+          - APK: attached below
 
-This is an automated development build. Until a stable release-signing key is configured, APKs from different workflow runs may not install as in-place updates over one another.
-' "$TAG_NAME" "$GITHUB_SHA" "$APK_SHA256" > release-notes.md
+          This is an automated development build. Until a stable release-signing key is configured, APKs from different workflow runs may not install as in-place updates over one another.
+          EOF
           gh release create "$TAG_NAME" "$APK_PATH" --title "GTA IV Universal $TAG_NAME" --notes-file release-notes.md
