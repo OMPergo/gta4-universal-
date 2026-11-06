@@ -25,7 +25,6 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Enumeration;
-import java.util.Locale;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -116,11 +115,6 @@ final class Installer {
 
 
     /**
-     * Accepts the user's regional TU8 ZIP and stages only the USA 6AC07221
-     * STFS package. The native installer still verifies the actual XEXP hash,
-     * title ID, base revision, and source signature before installation.
-     */
-    /**
      * Identifies the package from its STFS metadata, not its filename.
      * Regional archives often use opaque package filenames that do not contain
      * the Media ID. XContent metadata begins at 0x344; execution info begins
@@ -153,6 +147,10 @@ final class Installer {
                 && mediaId == 0x6AC07221;
     }
 
+    /**
+     * Accepts a regional TU8 ZIP and stages only the USA GTA IV STFS package.
+     * The native installer performs the deeper XEXP/base-executable validation.
+     */
     static File extractUsaTu8Package(Context context, String archivePath) throws java.io.IOException {
         File archive = new File(archivePath);
         if (!archive.isFile() || !archive.canRead()) {
@@ -183,8 +181,8 @@ final class Installer {
             }
             if (selected == null) {
                 throw new java.io.IOException(
-                        "No USA TU8 package (Media ID 6AC07221) was found in this ZIP. "
-                        + "Choose the regional TU8 ZIP or select the USA package file directly.");
+                        "No USA GTA IV TU8 STFS package (Title ID 545407F2, Media ID 6AC07221) was found in this ZIP. "
+                        + "Choose a regional TU8 ZIP containing the USA package, or select the USA package file directly.");
             }
 
             File temporary = new File(directory, "TU8-USA-6AC07221.live.tmp");
