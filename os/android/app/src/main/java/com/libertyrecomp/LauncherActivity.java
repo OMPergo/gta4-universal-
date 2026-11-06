@@ -220,6 +220,7 @@ public class LauncherActivity extends Activity {
         LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.VERTICAL);
         launcherAction(actions,"Settings","settings",this::showSettings);launcherAction(actions,"Game files","folder",this::showFilesPanel);
         launcherAction(actions,"Touch controls","touch",this::showTouchSettings);launcherAction(actions,"Drivers","driver",this::showDriverPanel);
+        launcherAction(actions,"Diagnostics","activity",()->DiagnosticsUi.show(this,mDataRoot));
 
         block.addView(actions,matchWrap(dp(2)));
         // Keep the footer neutral until GTA IV Universal's official links are added.
