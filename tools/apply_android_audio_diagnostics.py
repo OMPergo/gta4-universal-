@@ -93,7 +93,7 @@ void AndroidAudioDiag(const char*, const char* = "") {}
     )
     source = replace_once(
         source,
-        "  REXAPU_INFO(\n      \"Opened playback stream with {} input channels; device is {} Hz, {} channels, \"",
+      "Opened playback stream with {} input channels; device is {} Hz, {} channels, " """,
         """  AndroidAudioDiag("playback_stream_opened");
   REXAPU_INFO(
       "Opened playback stream with {} input channels; device is {} Hz, {} channels, \"""",
