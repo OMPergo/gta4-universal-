@@ -11,16 +11,27 @@
 - **Commit history:** [Friday integration branch](https://github.com/OMPergo/gta4-universal-/commits/friday/android-runtime-audit)
 - **Known issues and regression-prevention ledger:** [Build Failure Ledger](docs/BUILD_FAILURE_LEDGER.md)
 - **Galaxy A14 5G findings and recommended test profile:** [Android A14 Performance Audit](docs/ANDROID_A14_PERFORMANCE_AUDIT.md)
-- **Automatic latest build:** every successful Android push build on this integration branch refreshes the public `android-latest` release and replaces its APK/checksum assets. Versioned `android-vX.Y.Z` releases remain available separately.
-- **iPhone/iPad status:** launcher shell only; unsigned IPA is not installable directly. See [iOS installation roadmap](docs/IOS_INSTALLATION_ROADMAP.md).
-
+- **iOS/iPadOS CI:** [Apple build workflow](https://github.com/OMPergo/gta4-universal-/actions/workflows/ios.yml)
+- **iOS architecture and port milestones:** [Universal iOS Port Plan](docs/IOS_UNIVERSAL_PORT_PLAN.md)
+- **iOS installation and TestFlight roadmap:** [iOS installation roadmap](docs/IOS_INSTALLATION_ROADMAP.md)
+- **Automatic latest Android build:** every successful Android push build on this integration branch refreshes the public `android-latest` release and replaces its APK/checksum assets. Versioned `android-vX.Y.Z` releases remain available separately.
+- **iOS status:** CI builds an unsigned universal iPhone/iPad launcher package plus a simulator archive. The IPA requires Apple signing before device installation; it is not a playable GTA IV port yet.
 
 > The `android-latest` link is a shared development APK for contributors. It is refreshed only after CI succeeds. It is not yet a stable signed release; until a stable signing key is configured, updates from different builds may require a data-safe reinstall.
 <!-- PROJECT_STATUS_END -->
 
-An Android-focused GTA IV recompilation project based on the Xbox 360 release. The Android app uses the pinned XHYN/ReXGlue Android port as its gameplay runtime.
+GTA IV Universal is intended to be one cross-platform project—not unrelated platform launchers. The goal is to support Android, iOS/iPadOS, Windows, and other viable targets with platform-native builds, user-supplied legitimate game data, shared compatibility components, diagnostics, and genuine cross-platform multiplayer.
 
-> **Android runtime status:** The Android workflow builds the pinned XHYN native GTA IV runtime, SDL3, Vulkan renderer/driver components, installer, and launcher into an ARM64 APK. Physical-device testing has reached gameplay on a Samsung Galaxy A14 5G, but performance and memory stability are not yet acceptable; low-memory termination and a separate native signal-11 exit remain under investigation.
+> **Current reality:** Android builds the pinned XHYN native GTA IV runtime and has reached physical-device gameplay, but performance and memory stability remain under investigation. iOS currently builds a SwiftUI launcher/game-folder manager shell; the GTA IV gameplay runtime and multiplayer integration have not yet been ported and validated on iOS.
+
+## Universal project requirements
+
+- Each platform must use its own supported native build, graphics, input, audio, storage, and lifecycle integration.
+- Players provide their own legally obtained GTA IV game files and required updates; the project does not distribute Rockstar game assets.
+- Game-version and Title Update compatibility must be validated rather than assumed.
+- Multiplayer must use a shared, versioned protocol and compatible game-state integration. A protocol header or networking scaffold alone is not working cross-play.
+- Diagnostics should report platform, build, runtime, graphics, memory, performance, and network health where the platform permits.
+- Platform builds and installation instructions belong under this same repository and shared release hub.
 
 ## Android build
 
@@ -32,17 +43,19 @@ An Android-focused GTA IV recompilation project based on the Xbox 360 release. T
 
 A successful CI build proves that native libraries and the Android APK compile and pass packaging checks. It does **not** prove that a device can sustain gameplay without crashes, stutter, or thermal/memory pressure.
 
-## Two native code layers
+## iOS and iPadOS build
 
-- **Gameplay runtime:** built from the pinned `vendor/XHYN-IV-recomp` submodule using its ReXGlue/SDL3 Android build scripts. This supplies the actual game entry point, renderer, and installer libraries packaged into the Android APK.
-- **Universal support core:** the root `CMakeLists.txt` builds `LibertyUniversalCore` for hardware diagnostics, performance-tier experiments, GPU flags, multiplayer scaffolding, media-ID helpers, and a separate JNI bridge. It is not the game's main execution library and its configuration values must not be assumed to control the upstream renderer.
+- Xcode project specification: `ios/project.yml`
+- Bundle identifier: `com.ompergo.gtaivuniversal`
+- Minimum deployment target: iOS 15.0
+- CI builds iPhone and iPad simulator targets and an unsigned universal device IPA.
+- The unsigned IPA is a build artifact, not a tap-to-install iPhone download. Device installation requires Apple-approved signing and distribution.
+- See [Universal iOS Port Plan](docs/IOS_UNIVERSAL_PORT_PLAN.md) for the staged engine, multiplayer, and validation work.
 
-See [Implementation Status](docs/IMPLEMENTATION_STATUS.md), [Android Runtime Integration Audit](docs/ANDROID_RUNTIME_GAP_AUDIT.md), and [Android A14 Performance Audit](docs/ANDROID_A14_PERFORMANCE_AUDIT.md).
+## Runtime and shared code
 
-## Game data
+- **Android gameplay runtime:** built from the pinned `vendor/XHYN-IV-recomp` submodule using its ReXGlue/SDL3 Android build scripts.
+- **Universal support core:** the root `CMakeLists.txt` builds support code for diagnostics, performance-tier experiments, GPU flags, multiplayer scaffolding, media-ID helpers, and a JNI bridge. It is not the game's main execution library.
+- **iOS target:** currently SwiftUI launcher and game-folder management only. Porting the gameplay runtime requires separate engineering for iOS platform services and a supported graphics backend.
 
-This project does not distribute copyrighted GTA IV game assets. The Android installer expects the user to supply compatible game data and the required Title Update. The native installer is packaged as `libliberty_install.so`; the root support-core media-ID helper is separate and is not a substitute for the native installer’s complete validation path.
-
-## iOS status
-
-The iOS target currently builds a SwiftUI launcher/game-folder manager shell. It does not yet contain the Android ReXGlue/SDL3 runtime or an iOS-compatible native gameplay backend. A successful iOS launcher build is not a playable GTA IV iOS port.
+See [Implementation Status](docs/IMPLEMENTATION_STATUS.md), [Android Runtime Integration Audit](docs/ANDROID_RUNTIME_GAP_AUDIT.md), [Multiplayer](docs/MULTIPLAYER.md), and [Universal iOS Port Plan](docs/IOS_UNIVERSAL_PORT_PLAN.md).
