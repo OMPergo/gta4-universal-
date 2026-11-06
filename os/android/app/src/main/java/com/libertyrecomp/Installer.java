@@ -22,6 +22,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Enumeration;
 import java.util.Locale;
 import java.util.zip.ZipEntry;
@@ -118,6 +120,39 @@ final class Installer {
      * STFS package. The native installer still verifies the actual XEXP hash,
      * title ID, base revision, and source signature before installation.
      */
+    /**
+     * Identifies the package from its STFS metadata, not its filename.
+     * Regional archives often use opaque package filenames that do not contain
+     * the Media ID. XContent metadata begins at 0x344; execution info begins
+     * at 0x354 (Media ID) and contains the Title ID at 0x360.
+     */
+    private static boolean isUsaGta4TitleUpdate(ZipFile zip, ZipEntry entry)
+            throws java.io.IOException {
+        final int headerBytes = 0x364;
+        if (entry.getSize() >= 0 && entry.getSize() < headerBytes) return false;
+        byte[] header = new byte[headerBytes];
+        int offset = 0;
+        try (InputStream input = zip.getInputStream(entry)) {
+            while (offset < header.length) {
+                int count = input.read(header, offset, header.length - offset);
+                if (count < 0) return false;
+                if (count == 0) continue;
+                offset += count;
+            }
+        }
+        if (header[0] != 'L' || header[1] != 'I'
+                || header[2] != 'V' || header[3] != 'E') {
+            return false;
+        }
+        ByteBuffer metadata = ByteBuffer.wrap(header).order(ByteOrder.BIG_ENDIAN);
+        int contentType = metadata.getInt(0x344);
+        int mediaId = metadata.getInt(0x354);
+        int titleId = metadata.getInt(0x360);
+        return contentType == 0x000B0000
+                && titleId == 0x545407F2
+                && mediaId == 0x6AC07221;
+    }
+
     static File extractUsaTu8Package(Context context, String archivePath) throws java.io.IOException {
         File archive = new File(archivePath);
         if (!archive.isFile() || !archive.canRead()) {
@@ -136,15 +171,12 @@ final class Installer {
             while (entries.hasMoreElements()) {
                 ZipEntry entry = entries.nextElement();
                 if (entry.isDirectory()) continue;
-                String upper = entry.getName().toUpperCase(Locale.ROOT);
-                int slash = upper.lastIndexOf('/');
-                String baseName = slash >= 0 ? upper.substring(slash + 1) : upper;
-                if (upper.contains("6AC07221") && baseName.startsWith("TU_")) {
+                if (entry.getSize() > maxPackageBytes) {
+                    continue;
+                }
+                if (isUsaGta4TitleUpdate(zip, entry)) {
                     if (selected != null) {
-                        throw new java.io.IOException("The ZIP contains more than one USA 6AC07221 update package.");
-                    }
-                    if (entry.getSize() > maxPackageBytes) {
-                        throw new java.io.IOException("The USA Title Update package is larger than expected.");
+                        throw new java.io.IOException("The ZIP contains more than one USA GTA IV Title Update package.");
                     }
                     selected = entry;
                 }
