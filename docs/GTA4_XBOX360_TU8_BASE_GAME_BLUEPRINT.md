@@ -121,3 +121,31 @@ The upstream hash table lists the TU8 v8 package size as 3,715,072 bytes with a 
 ## Runtime cross-check from the same device capture
 
 The 2026-11-06 Android capture identifies the game title as 545407F2 and logs repeated probes under game:/xbox360/audio/config as well as update:/shaders. Those base-game audio configuration files are not part of this TU8 package's file table; they must come from the base game/RPF extraction path. The detailed A14 findings are recorded in docs/ANDROID_A14_DIAGNOSTIC_20261106.md.
+
+
+## Installer-confirmed minimum base-disc inputs
+
+The pinned XHYN installer source defines the base-game file list as exactly these four root files:
+
+| Required source file | Purpose |
+|---|---|
+| default.xex | Base Xbox 360 game executable |
+| audio.rpf | Audio resources and configuration |
+| common.rpf | Shared game resources |
+| xbox360.rpf | Xbox 360-specific resources |
+
+The installer checks for game/default.xex as the install marker and copies these four files from the selected ISO/VFS. It then recursively extracts the three RPF archives into sibling directories:
+
+- audio.rpf → game/audio/
+- common.rpf → game/common/
+- xbox360.rpf → game/xbox360/
+
+Nested RPF archives are also recursively extracted, and the original RPF files are removed after successful extraction. The installer may skip extraction if the corresponding output directory already exists and is non-empty.
+
+This gives us a more precise minimum source manifest than a generic disc-wide file listing. It does not mean those four files are the only files needed at runtime: their contents are extracted into many required subfiles.
+
+## TU8 relationship: delta, not full replacement executable
+
+The USA TU8 STFS package contains default.xexp, not a standalone default.xex replacement. The base default.xex remains required. The update's default.xexp is a delta that must be applied against a compatible base executable. The package's remaining update resources (update.img, shaders, data, and text) are staged separately.
+
+The capture's missing game:/xbox360/audio/config probes point into the extracted xbox360.rpf tree. Since the package's verified TU8 file table does not contain those audio configuration resources, the investigation must verify RPF extraction completion and VFS path exposure rather than searching for those files inside TU8.
