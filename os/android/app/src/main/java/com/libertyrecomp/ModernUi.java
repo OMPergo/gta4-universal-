@@ -11,7 +11,7 @@ import android.view.animation.DecelerateInterpolator;
 
 /** Shared, borderless Android menus; these never load the renderer. */
 final class ModernUi {
-    static final int BG=0xff080808,CARD=0xff151515,TEXT=0xfff4f1e8,MUTED=0xffaaa9a5,ACCENT=0xffdfc28a;
+    static final int BG=0xff06111d,CARD=0xff0d1c2b,TEXT=0xfff2f6fb,MUTED=0xff9aafc3,ACCENT=0xff55c7f2;
     static int dp(Activity a,float n){return Math.round(n*a.getResources().getDisplayMetrics().density);}
     static void safeInsets(Activity a,View view,int horizontal,int vertical){
         safeInsets(a,view,horizontal,vertical,vertical);
