@@ -78,7 +78,7 @@ jobs:
 
       - name: Apply bounded Mali texture decode worker pool
         run: python3 tools/apply_mali_decode_pool.py
-
+\n      - name: Apply Android audio initialization diagnostics (no audio behavior changes)\n        run: python3 tools/apply_android_audio_diagnostics.py\n
       - name: Build Android Vulkan driver proxy and hooks
         run: |
           export ANDROID_HOME="$ANDROID_SDK_ROOT"
