@@ -104,3 +104,21 @@ The full file table and per-file hashes are in the evidence report. The parser c
 ## Important distinction
 
 This diagnostic archive is from a build/run that reached game rendering. CI success and successful launch do not establish stable gameplay. No APK changes have been made from this audit yet.
+
+
+## Additional installer-code finding: incomplete RPF trees can be mistaken for complete
+
+The pinned upstream installer copies four base files from the ISO: default.xex, audio.rpf, common.rpf, and xbox360.rpf. It then extracts the three RPF archives into audio/, common/, and xbox360/ trees.
+
+There is a risky shortcut in the current upstream installer: if one of those output directories already exists and is merely non-empty, the installer treats it as already extracted, deletes the corresponding source .rpf archive, and skips extraction. It does not verify a completion marker, required files, or a manifest before doing so.
+
+This is not proof that the A14 installation has a partial tree. It is, however, a concrete way an incomplete pre-existing extraction could leave missing paths such as game:/xbox360/audio/config while the installer believes extraction is complete.
+
+Recommended fix before changing the user's existing install:
+1. Add a deterministic extraction-complete marker containing the source RPF hash and extractor version.
+2. Validate a small required-file manifest before treating an existing output directory as complete.
+3. Never delete the original RPF unless extraction and post-extraction validation both succeed.
+4. If the directory is incomplete and the source RPF still exists, safely re-extract to a temporary directory and atomically replace the old tree.
+5. Add a regression test for a non-empty but incomplete output directory.
+
+Do not delete the user's current game data or force a reinstall until we know whether the original RPF archives are still available in the app's game folder.
