@@ -1,4 +1,5 @@
 #include "universal_runtime.h"
+#include "diagnostics/resource_budget.h"
 #include <filesystem>
 #include <sstream>
 
@@ -16,6 +17,26 @@ bool UniversalRuntime::Initialize(const std::string& storage_path) {
   status_.hardware_report = Diagnostics::DetectHostHardwareCapabilities();
   status_.active_graphics_settings = Diagnostics::GetTunedSettingsForTier(
       status_.hardware_report.recommended_tier, status_.hardware_report);
+
+  // Convert tier preferences into a conservative runtime allocation plan.
+  // This is a policy ceiling; individual allocators must opt in and account
+  // real allocations before it can enforce process-wide memory usage.
+  Diagnostics::ResourceBudgetInputs budget_inputs;
+  budget_inputs.process_budget_bytes =
+      status_.hardware_report.memory.conservative_budget_bytes;
+  budget_inputs.preferred_texture_budget_bytes =
+      status_.active_graphics_settings.texture_memory_budget_bytes;
+  budget_inputs.preferred_streaming_budget_bytes =
+      status_.active_graphics_settings.streaming_cache_budget_bytes;
+  budget_inputs.preferred_decode_scratch_bytes =
+      status_.active_graphics_settings.decode_scratch_budget_bytes;
+  const auto budget_plan = Diagnostics::ComputeResourceBudgetPlan(budget_inputs);
+  if (budget_plan.IsValid()) {
+    status_.active_graphics_settings.texture_memory_budget_bytes = budget_plan.texture_bytes;
+    status_.active_graphics_settings.streaming_cache_budget_bytes = budget_plan.streaming_bytes;
+    status_.active_graphics_settings.decode_scratch_budget_bytes = budget_plan.decode_scratch_bytes;
+  }
+
   status_.gpu_workarounds = Gpu::EvaluateGpuWorkarounds(status_.hardware_report);
 
   status_.state = RuntimeInitState::HardwareProbed;
