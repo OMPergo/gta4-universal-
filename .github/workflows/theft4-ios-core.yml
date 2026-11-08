@@ -27,13 +27,18 @@ jobs:
             sdk: simulator
             artifact: theft4-ios-simulator-core-probe
     steps:
-      - name: Checkout pinned Theft4 source
+      - name: Checkout Universal with pinned Theft4 runtime submodule
         uses: actions/checkout@v4
         with:
-          repository: KoreanSeats1/Theft4
-          ref: 88115fefad59cfcb62d17c0c9548a7a900c01a23
+          ref: integration/theft4-ios-xhyn-multiplatform
           fetch-depth: 1
           submodules: false
+
+      - name: Initialize pinned Theft4 runtime source
+        run: |
+          git submodule update --init runtime/theft4
+          test "$(git -C runtime/theft4 rev-parse HEAD)" = "88115fefad59cfcb62d17c0c9548a7a900c01a23"
+
 
       - name: Install build tools
         run: |
