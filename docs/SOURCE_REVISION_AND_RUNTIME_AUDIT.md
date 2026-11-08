@@ -131,3 +131,54 @@ before importing each component. Preserve notices and source attribution.
 Do not put GTA IV game data, TU8, encryption keys, user saves, private crash
 reports, device identifiers, Apple signing keys, or provisioning profiles in
 the public repository or ordinary CI artifacts.
+
+
+## 7. Direct shared-runtime comparison: the two trees are not interchangeable
+
+The following files were fetched from the pinned Theft4 snapshot and the OMPergo
+XHYN mirror. The blob SHAs are exact content identifiers, not commit SHAs.
+
+| File | Theft4 blob SHA | XHYN mirror blob SHA | Result |
+|---|---|---|---|
+| `glue/rexglue-sdk-main/CMakeLists.txt` | `5d5667499f5d57be48cc7fb8529153c971b36e3a` | `fef3fea0eab4cedadfad4a89a3979d2b2aee108a` | Diverged |
+| `glue/rexglue-sdk-main/gta4-recomp/generated/sources.cmake` | `1b9e7487e2831983a98ac62db1331de21d1429be` | `6765efc6dc72cb1b31a47ae4308f253a7fc2a6c1` | Diverged |
+| `glue/rexglue-sdk-main/src/system/runtime.cpp` | `eff2da89ccd14f36c2dd5a3bb5ba91170a316557` | `1aad87ae6b3edfe9ab35667564a5ffd176ba313c` | Diverged |
+| `tools/setup_repo.py` | `46d450866e69f057a904586d4aee941549f85fed` | `5c90f673280becb51e39bad02334f4b60971a4d1` | Diverged |
+| `CMakePresets.json` | `09e8475cf7c78a9294838b175cb76678c2170bc8` | `2f2e056687e48016cb0ed51f03e310d9f5a5f86a` | Diverged |
+
+Specific differences observed:
+
+- Theft4's ReXGlue CMake adds `REXGLUE_CORE_ONLY`, `REXGLUE_RUNTIME_ONLY`,
+  `REXGLUE_HEADLESS_KERNEL`, and headless audio/XMA/input build switches.
+  Those are essential to its staged iOS core/runtime bring-up. XHYN's CMake
+  instead carries Android-specific library naming and compiler optimization
+  logic. Neither file can replace the other wholesale.
+- The generated AOT source manifest in XHYN contains five additional generated
+  translation units, `gta4_recomp.84.cpp` through `gta4_recomp.88.cpp`, that
+  are not listed by Theft4's manifest. The two generated source sets therefore
+  require a provenance and registration/ABI comparison before they can be
+  considered one title build.
+- `runtime.cpp` differs in runtime filesystem/data-mod policy and clock policy.
+  These are behavioral changes, not just formatting.
+- Theft4's setup helper has a `--check-export` mode to validate a frozen,
+  already-patched dependency source export without Git writes. The XHYN mirror's
+  helper does not expose that mode.
+- Theft4's CMake presets include iOS device/simulator core-only presets; the
+  XHYN mirror's preset file does not contain those iOS core presets.
+- The two `.gitmodules` files fetched in this audit have the same blob SHA,
+  but that only proves their URL/config text matches. It does not prove the
+  gitlink commit pointers in each repository match.
+
+### Integration decision updated
+
+**Do not select either complete ReXGlue directory as a drop-in replacement for
+the other.** Use Theft4's iOS-specific CMake/runtime adaptations as the iOS
+starting point, then selectively port Android-independent fixes from XHYN after
+each change is reviewed against the Theft4 interfaces and generated AOT source
+manifest. Keep XHYN's Android optimizations, Java/Kotlin UI, SDL Android glue,
+driver packaging and touch-control UI in the Android adapter.
+
+The next code-level comparison should inspect the five extra XHYN generated
+translation units and the corresponding registration/function-table changes,
+then map shared runtime fixes file-by-file. No generated code should be deleted,
+renamed, or mixed until that provenance comparison is complete.
