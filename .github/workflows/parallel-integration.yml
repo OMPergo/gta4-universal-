@@ -197,6 +197,8 @@ jobs:
         run: |
           grep -q 'path = runtime/theft4' .gitmodules
           grep -q 'url = https://github.com/KoreanSeats1/Theft4.git' .gitmodules
+          grep -q 'path = runtime/xhyn-android' .gitmodules
+          grep -q 'url = https://github.com/OMPergo/XHYN-IV-recomp-multiplayer-1.0.git' .gitmodules
           git submodule update --init runtime/theft4
           test "$(git -C runtime/theft4 rev-parse HEAD)" = "88115fefad59cfcb62d17c0c9548a7a900c01a23"
           git submodule update --init runtime/xhyn-android
@@ -214,8 +216,10 @@ jobs:
           ref: integration/theft4-ios-xhyn-multiplatform
           fetch-depth: 1
           submodules: false
-      - name: Initialize runtime submodule
-        run: git submodule update --init runtime/theft4
+      - name: Initialize both pinned runtime submodules
+        run: |
+          git submodule update --init runtime/theft4
+          git submodule update --init runtime/xhyn-android
       - name: Configure Universal with runtime targets enabled
         run: |
           cmake -S . -B build-runtime-bridge \
