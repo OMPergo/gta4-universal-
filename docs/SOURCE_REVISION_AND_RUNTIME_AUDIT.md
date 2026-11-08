@@ -208,3 +208,31 @@ This means the five chunks must not simply be appended to Theft4's source list.
 The next audit must identify which generated functions/registrations they add,
 whether the XHYN source generator/config differs, and whether the new chunks
 depend on runtime APIs not present in the Theft4 baseline.
+
+
+## 9. Runtime source is now pinned inside Universal
+
+The branch now contains a real Git submodule at `runtime/theft4`, pinned to
+Theft4 commit `88115fefad59cfcb62d17c0c9548a7a900c01a23`. This makes the
+selected iOS runtime source part of the Universal checkout instead of merely
+a separate workflow checkout. The submodule is source-only; no GTA IV game data,
+keys, saves, or signing material are included.
+
+The OMPergo Android reference mirror is now pinned for reproducible comparison
+at `be597d42d12abb04a552fd87e3853028499ae835`. It remains a CI/audit reference
+rather than a second full runtime copy, because importing both divergent
+generated runtimes would duplicate and potentially conflict game code.
+
+The iOS core workflow now checks out the Universal branch, initializes
+`runtime/theft4`, verifies the exact submodule SHA, and runs the device and
+simulator core/link matrix from that shared-project path. The workflow is
+compile/link validation only. It does not yet prove a complete UIKit app,
+installable IPA, GTA IV boot, or multiplayer.
+
+The Universal root CMake project still builds its existing diagnostics/session
+core independently. The next integration gate is to expose a controlled
+runtime build target/preset without forcing the iOS-specific CMake 3.29/C++23
+tree into every host/Android build. After the pinned iOS core/link matrix is
+green, wire the runtime's real startup and platform bridge targets into the
+Universal app shells. Do not label the current protocol scaffold as gameplay
+networking.
