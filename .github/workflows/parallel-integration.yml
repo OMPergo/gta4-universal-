@@ -199,7 +199,10 @@ jobs:
           grep -q 'url = https://github.com/KoreanSeats1/Theft4.git' .gitmodules
           git submodule update --init runtime/theft4
           test "$(git -C runtime/theft4 rev-parse HEAD)" = "88115fefad59cfcb62d17c0c9548a7a900c01a23"
+          git submodule update --init runtime/xhyn-android
+          test "$(git -C runtime/xhyn-android rev-parse HEAD)" = "be597d42d12abb04a552fd87e3853028499ae835"
           grep -q '88115fefad59cfcb62d17c0c9548a7a900c01a23' docs/RUNTIME_SOURCE_MANIFEST.md
+          grep -q 'be597d42d12abb04a552fd87e3853028499ae835' docs/RUNTIME_SOURCE_MANIFEST.md
 
   runtime-bridge-configure:
     name: 12/12 Universal runtime target configuration
@@ -215,5 +218,8 @@ jobs:
         run: git submodule update --init runtime/theft4
       - name: Configure Universal with runtime targets enabled
         run: |
-          cmake -S . -B build-runtime-bridge -DUNIVERSAL_ENABLE_THEFT4_IOS_RUNTIME=ON
+          cmake -S . -B build-runtime-bridge \
+            -DUNIVERSAL_ENABLE_THEFT4_IOS_RUNTIME=ON \
+            -DUNIVERSAL_ENABLE_XHYN_ANDROID_RUNTIME=ON
           cmake --build build-runtime-bridge --target help | grep -E 'universal_ios_(device|simulator)_runtime_core'
+          cmake --build build-runtime-bridge --target help | grep -E 'universal_android_arm64_(runtime|apk)'
