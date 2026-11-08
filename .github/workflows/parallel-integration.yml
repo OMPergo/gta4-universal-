@@ -9,7 +9,7 @@ on:
 permissions:
   contents: read
 
-# Ten independent lanes start together where GitHub-hosted runner capacity permits.
+# Twelve independent lanes start together where GitHub-hosted runner capacity permits.
 # No lane depends on another; a failure is reported without cancelling its siblings.
 jobs:
   host-core-tests:
@@ -65,12 +65,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: KoreanSeats1/Theft4
-          ref: 88115fefad59cfcb62d17c0c9548a7a900c01a23
+          ref: integration/theft4-ios-xhyn-multiplatform
           fetch-depth: 1
           submodules: false
-      - name: Verify source/build entry points and record revision
+      - name: Initialize pinned runtime source
         run: |
+          git submodule update --init runtime/theft4
+          cd runtime/theft4
           test -s README.md
           test -s CMakeLists.txt
           test -s .gitmodules
@@ -94,6 +95,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: OMPergo/XHYN-IV-recomp-multiplayer-1.0
+          ref: be597d42d12abb04a552fd87e3853028499ae835
           fetch-depth: 1
           submodules: false
       - name: Verify Android source/build entry points
@@ -162,7 +164,9 @@ jobs:
           grep -q "multiplayer" docs/PLATFORM_INTEGRATION_PLAN.md
           grep -q "Personal Team" docs/IOS_FREE_SIGNING_AND_PHONE_ONLY_PLAN.md
           test -s docs/SOURCE_REVISION_AND_RUNTIME_AUDIT.md
+          test -s docs/RUNTIME_SOURCE_MANIFEST.md
           grep -q "88115fefad59cfcb62d17c0c9548a7a900c01a23" docs/SOURCE_REVISION_AND_RUNTIME_AUDIT.md
+          grep -q "be597d42d12abb04a552fd87e3853028499ae835" docs/RUNTIME_SOURCE_MANIFEST.md
 
   source-provenance-audit:
     name: 10/10 Source provenance and repository hygiene
@@ -177,3 +181,39 @@ jobs:
             echo "Unexpected GTA IV game payload found in repository checkout."
             exit 1
           fi
+
+
+  runtime-source-pin-integrity:
+    name: 11/12 Pinned runtime submodule integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: integration/theft4-ios-xhyn-multiplatform
+          fetch-depth: 1
+          submodules: false
+      - name: Verify exact source pointer and manifest
+        run: |
+          grep -q 'path = runtime/theft4' .gitmodules
+          grep -q 'url = https://github.com/KoreanSeats1/Theft4.git' .gitmodules
+          git submodule update --init runtime/theft4
+          test "$(git -C runtime/theft4 rev-parse HEAD)" = "88115fefad59cfcb62d17c0c9548a7a900c01a23"
+          grep -q '88115fefad59cfcb62d17c0c9548a7a900c01a23' docs/RUNTIME_SOURCE_MANIFEST.md
+
+  runtime-bridge-configure:
+    name: 12/12 Universal runtime target configuration
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: integration/theft4-ios-xhyn-multiplatform
+          fetch-depth: 1
+          submodules: false
+      - name: Initialize runtime submodule
+        run: git submodule update --init runtime/theft4
+      - name: Configure Universal with runtime targets enabled
+        run: |
+          cmake -S . -B build-runtime-bridge -DUNIVERSAL_ENABLE_THEFT4_IOS_RUNTIME=ON
+          cmake --build build-runtime-bridge --target help | grep -E 'universal_ios_(device|simulator)_runtime_core'
