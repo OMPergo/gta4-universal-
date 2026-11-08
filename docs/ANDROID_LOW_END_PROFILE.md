@@ -1,0 +1,63 @@
+# Android low-end device profile
+
+The Android runtime is pinned to XHYN source commit
+`be597d42d12abb04a552fd87e3853028499ae835`. The source remains an external
+Git submodule; this repository stores a deterministic build-time patch at
+`tools/apply_android_low_end_profile.py`.
+
+## Automatic detection
+
+The Universal Android app uses the low-end defaults on first launch when
+Android reports **6 GiB RAM or less**, or the detected renderer is **Mali-G57**.
+This includes the Galaxy A14 5G / Mali-G57 MC2 target. Devices outside that
+threshold retain the upstream baseline defaults.
+
+The Universal Android application ID is `com.ompergo.gta4universal`, so it
+installs separately from the upstream XHYN app and starts with its own settings
+directory. Existing installations are not overwritten.
+
+## Low-end defaults
+
+- 720p render target with FSR1 Performance upscaling
+- 30 FPS frame cap
+- Two queued frames instead of three
+- 256 shadow map and sun-shadow interval disabled
+- Quarter-resolution world, water, and mirror reflections
+- Near-only reflection capture
+- Dynamic draw distance, reduced to 0.65
+- Traffic, parked-car, pedestrian, and scenario density scales at 0.30
+- One shader/pipeline worker, pipeline prewarm and lookahead enabled
+- Converted-texture disk cache enabled
+- Android performance hints and thermal guard enabled
+- GPU turbo disabled to avoid forcing sustained heat/power draw
+- Adaptive audio buffering retained
+
+The settings are written only when a key is absent. Players can change them in
+the in-app settings afterward. The profile does not alter game data, title
+updates, saves, or user files.
+
+## Mali-specific findings and guardrails
+
+The uploaded Galaxy A14 capture reports that Mali-G57 MC2 lacks native BC1/BC2/BC3
+texture sampling. The pinned runtime already has CPU fallback decoders for
+those formats and a bounded single-helper texture decode path that respects
+Android CPU affinity. Do not force extra decode threads without device traces.
+
+The capture also reports that `shaderClipDistance` is unavailable. The
+current SPIR-V compatibility rewrite explicitly omits unsupported clip planes;
+it does not emulate clipping. Do not describe this as fixed or turn on unrelated
+depth-clamp fallbacks. A proper software/shader clipping implementation needs
+separate correctness work.
+
+## Build outputs
+
+The Android build workflow compiles the native runtime in Release mode and
+strips packaged shared libraries, while preserving separate native symbols.
+It packages:
+- `app-debug.apk`: debug-key signed and installable on ARM64 Android devices.
+- `app-release-unsigned.apk`: release-variant package, unsigned until a release
+  signing key is configured.
+- Native symbols archive for crash/tombstone analysis.
+
+Minimum Android version remains API 29 (Android 10), target API 35, ABI
+`arm64-v8a`. User-owned GTA IV base-game data and TU8 are not included.
