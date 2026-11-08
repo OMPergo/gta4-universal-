@@ -15,9 +15,9 @@ permissions:
 
 jobs:
   android-arm64-runtime-apk:
-    name: Pinned XHYN ARM64 native runtime and debug APK
+    name: Optimized ARM64 runtime + installable Universal APK
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
+    timeout-minutes: 180
     steps:
       - name: Checkout Universal project
         uses: actions/checkout@v4
@@ -40,6 +40,15 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install host build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build zip unzip
+          cmake --version
+          ninja --version
+          python3 --version
+          java -version
+
       - uses: android-actions/setup-android@v3
 
       - name: Install pinned Android SDK and NDK
@@ -53,29 +62,99 @@ jobs:
         working-directory: runtime/xhyn-android
         run: git submodule update --init --recursive --jobs 4
 
-      - name: Configure Universal Android runtime bridge
-        run: cmake -S . -B build-android-runtime -DUNIVERSAL_ENABLE_XHYN_ANDROID_RUNTIME=ON
-
-      - name: Build native ARM64 runtime and package debug APK
-        run: cmake --build build-android-runtime --target universal_android_arm64_apk --parallel 2
-
-      - name: Verify APK contains native runtime libraries
+      - name: Configure Universal Android build targets
         run: |
-          APK=runtime/xhyn-android/os/android/app/build/outputs/apk/debug/app-debug.apk
-          test -s "$APK"
-          unzip -l "$APK" | grep -E 'lib/arm64-v8a/libmain\.so'
-          unzip -l "$APK" | grep -E 'lib/arm64-v8a/librexruntime\.so'
-          unzip -l "$APK" | grep -E 'lib/arm64-v8a/libSDL3\.so'
-          unzip -l "$APK" | grep -E 'lib/arm64-v8a/libc\+\+_shared\.so'
-          sha256sum "$APK" | tee apk-sha256.txt
-          du -h "$APK"
+          cmake -S . -B build-android-runtime -G Ninja \
+            -DUNIVERSAL_ENABLE_XHYN_ANDROID_RUNTIME=ON
 
-      - name: Upload unsigned debug APK (user game data not included)
+      - name: Build optimized native runtime, Vulkan bridge, and APK variants
+        run: |
+          cmake --build build-android-runtime \
+            --target universal_android_arm64_apk --parallel 2
+
+      - name: Verify installable debug APK and release package
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP=runtime/xhyn-android/os/android/app/build/outputs/apk
+          DEBUG_APK="$APP/debug/app-debug.apk"
+          RELEASE_APK="$APP/release/app-release-unsigned.apk"
+          test -s "$DEBUG_APK"
+          test -s "$RELEASE_APK"
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          "$AAPT" dump badging "$DEBUG_APK" | tee android-package.txt
+          grep -q "package: name='com.ompergo.gta4universal'" android-package.txt
+          grep -q "application-label:'GTA IV Universal'" android-package.txt
+          "$APKSIGNER" verify --verbose "$DEBUG_APK"
+          for lib in libmain.so librexruntime.so libSDL3.so libc++_shared.so libvulkan.so libmain_hook.so libhook_impl.so libc11_threads_compat.so; do
+            unzip -Z1 "$DEBUG_APK" | grep -Fx "lib/arm64-v8a/$lib"
+          done
+          unzip -Z1 "$DEBUG_APK" | grep -E '^lib/arm64-v8a/librexgpu-.*\.so$'
+          sha256sum "$DEBUG_APK" "$RELEASE_APK" | tee android-apk-sha256.txt
+          stat -c 'Debug APK size: %s bytes' "$DEBUG_APK"
+          stat -c 'Release APK size: %s bytes' "$RELEASE_APK"
+          {
+            echo "## Android ARM64 APK"
+            echo "- App ID: com.ompergo.gta4universal"
+            echo "- Android min SDK: 29 (Android 10)"
+            echo "- Android target SDK: 35"
+            echo "- ABI: arm64-v8a"
+            echo "- Native build: Release, stripped packaged libraries"
+            echo "- Device profile: automatic low-end defaults at <=6 GiB RAM or Mali-G57"
+            echo "- Renderer profile: FSR1 performance, 30 FPS cap, reduced reflections/draw distance, 2 queued frames, thermal guard"
+            echo "- Debug APK: signed with the standard Android debug key; intended for direct device installation"
+            echo "- Release APK: unsigned; requires a release signing key before distribution"
+            echo "- User-owned GTA IV base game and TU8: not included"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Preserve native debug symbols separately
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p android-native-symbols
+          OBJCOPY="$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-objcopy"
+          for so in \
+            runtime/xhyn-android/out/build/android-arm64-release/glue/gta4-recomp/libmain.so \
+            runtime/xhyn-android/out/build/android-arm64-release/glue/gta4-recomp/libliberty_install.so \
+            runtime/xhyn-android/glue/rexglue-sdk-main/out/linux-arm64/librexruntime.so \
+            runtime/xhyn-android/glue/rexglue-sdk-main/out/linux-arm64/libSDL3.so; do
+            if [ -s "$so" ]; then
+              "$OBJCOPY" --only-keep-debug "$so" "android-native-symbols/$(basename "$so").debug"
+            fi
+          done
+          find runtime/xhyn-android/glue/rexglue-sdk-main/out/linux-arm64 -maxdepth 1 -name 'librexgpu-*.so' -type f -print0 2>/dev/null | while IFS= read -r -d '' so; do
+            "$OBJCOPY" --only-keep-debug "$so" "android-native-symbols/$(basename "$so").debug"
+          done
+          (cd android-native-symbols && zip -q -r ../android-native-symbols.zip .) || true
+
+      - name: Upload installable debug APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: universal-xhyn-android-arm64-debug-apk
+          name: gta4-universal-android-arm64-debug-apk
           path: |
             runtime/xhyn-android/os/android/app/build/outputs/apk/debug/app-debug.apk
-            apk-sha256.txt
+            android-package.txt
+            android-apk-sha256.txt
           if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload unsigned release APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gta4-universal-android-arm64-release-unsigned
+          path: runtime/xhyn-android/os/android/app/build/outputs/apk/release/app-release-unsigned.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload native symbols for crash diagnosis
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gta4-universal-android-native-symbols
+          path: android-native-symbols.zip
+          if-no-files-found: ignore
           retention-days: 7
