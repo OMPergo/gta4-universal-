@@ -120,18 +120,27 @@ if(UNIVERSAL_ENABLE_XHYN_ANDROID_RUNTIME)
             "The pinned XHYN Android runtime is missing. Initialize submodule runtime/xhyn-android.")
     endif()
 
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+
     add_custom_target(universal_android_arm64_runtime
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/apply_android_low_end_profile.py" "${UNIVERSAL_XHYN_SOURCE_DIR}"
         COMMAND "${CMAKE_COMMAND}" -E env
             "ANDROID_NDK=$ENV{ANDROID_NDK}"
+            "BUILD_TYPE=Release"
+            "STRIP=1"
             bash os/android/scripts/build_native.sh 2
+        COMMAND "${CMAKE_COMMAND}" -E env
+            "ANDROID_NDK=$ENV{ANDROID_NDK}"
+            bash os/android/scripts/build_driver_proxy.sh
         WORKING_DIRECTORY "${UNIVERSAL_XHYN_SOURCE_DIR}"
         USES_TERMINAL
-        COMMENT "Build pinned XHYN Android ARM64 native runtime")
+        COMMENT "Build optimized pinned XHYN ARM64 runtime and Android driver bridge")
 
     add_custom_target(universal_android_arm64_apk
-        COMMAND ./gradlew --no-daemon --max-workers=2 assembleDebug
-        WORKING_DIRECTORY "${UNIVERSAL_XHYN_SOURCE_DIR}/os/android"
+        COMMAND bash os/android/scripts/build_apk.sh debug
+        COMMAND bash os/android/scripts/build_apk.sh release
+        WORKING_DIRECTORY "${UNIVERSAL_XHYN_SOURCE_DIR}"
         DEPENDS universal_android_arm64_runtime
         USES_TERMINAL
-        COMMENT "Package pinned XHYN Android runtime debug APK")
+        COMMENT "Package installable debug and release GTA IV Universal APKs")
 endif()
