@@ -3,7 +3,6 @@ name: GTA IV Universal iOS App Build
 on:
   push:
     branches: ["integration/**"]
-  pull_request:
   workflow_dispatch:
 
 concurrency:
