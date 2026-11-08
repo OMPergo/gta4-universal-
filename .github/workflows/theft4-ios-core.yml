@@ -58,12 +58,12 @@ jobs:
       - name: Verify Mach-O platform and dynamic-code boundary
         run: |
           if [ "${{ matrix.sdk }}" = "device" ]; then
-            BINARY="out/build/ios-device-debug/ios-smoke/Debug/rexcore_link_smoke.app/rexcore_link_smoke"
+            BINARY="runtime/theft4/out/build/ios-device-debug/ios-smoke/Debug/rexcore_link_smoke.app/rexcore_link_smoke"
           else
-            BINARY="out/build/ios-simulator-debug/ios-smoke/Debug/rexcore_link_smoke.app/rexcore_link_smoke"
+            BINARY="runtime/theft4/out/build/ios-simulator-debug/ios-smoke/Debug/rexcore_link_smoke.app/rexcore_link_smoke"
           fi
           test -s "$BINARY"
-          python3 tests/ios/verify_core_artifact.py "$BINARY" --platform "${{ matrix.sdk }}"
+          python3 runtime/theft4/tests/ios/verify_core_artifact.py "$BINARY" --platform "${{ matrix.sdk }}"
 
       - name: Record source and build status
         if: always()
@@ -80,7 +80,7 @@ jobs:
         with:
           name: ${{ matrix.artifact }}
           path: |
-            out/build/${{ matrix.preset }}/ios-smoke/
-            glue/rexglue-sdk-main/out/
+            runtime/theft4/out/build/${{ matrix.preset }}/ios-smoke/
+            runtime/theft4/glue/rexglue-sdk-main/out/
           if-no-files-found: error
           retention-days: 7
