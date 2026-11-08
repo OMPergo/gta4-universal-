@@ -1,11 +1,7 @@
 name: Apple iOS & iPadOS Build
 
 on:
-  push:
-    branches: [main, "jules-*", "integration/**"]
-  pull_request:
   workflow_dispatch:
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: true
