@@ -124,6 +124,8 @@ if(UNIVERSAL_ENABLE_XHYN_ANDROID_RUNTIME)
 
     add_custom_target(universal_android_arm64_runtime
         COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/apply_android_low_end_profile.py" "${UNIVERSAL_XHYN_SOURCE_DIR}"
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/apply_mali_decode_pool.py" "${UNIVERSAL_XHYN_SOURCE_DIR}"
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/apply_android_audio_diagnostics.py" "${UNIVERSAL_XHYN_SOURCE_DIR}"
         COMMAND "${CMAKE_COMMAND}" -E env
             "ANDROID_NDK=$ENV{ANDROID_NDK}"
             "BUILD_TYPE=Release"
