@@ -48,7 +48,12 @@ jobs:
           python3 --version
           java -version
 
-      - uses: android-actions/setup-android@v3
+      - name: Set up Android SDK
+        id: android_sdk
+        uses: android-actions/setup-android@v3
+        with:
+          # The legacy SDK 'tools' package has been removed upstream.
+          packages: 'platform-tools'
 
       - name: Install pinned Android SDK and NDK
         run: |
@@ -113,7 +118,15 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p android-native-symbols
+          if [ -z "${ANDROID_NDK:-}" ]; then
+            echo "Android NDK was not installed; skipping native symbol extraction."
+            exit 0
+          fi
           OBJCOPY="$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-objcopy"
+          if [ ! -x "$OBJCOPY" ]; then
+            echo "llvm-objcopy is unavailable; skipping native symbol extraction."
+            exit 0
+          fi
           for so in \
             runtime/xhyn-android/out/build/android-arm64-release/glue/gta4-recomp/libmain.so \
             runtime/xhyn-android/out/build/android-arm64-release/glue/gta4-recomp/libliberty_install.so \
@@ -126,7 +139,9 @@ jobs:
           find runtime/xhyn-android/glue/rexglue-sdk-main/out/linux-arm64 -maxdepth 1 -name 'librexgpu-*.so' -type f -print0 2>/dev/null | while IFS= read -r -d '' so; do
             "$OBJCOPY" --only-keep-debug "$so" "android-native-symbols/$(basename "$so").debug"
           done
-          (cd android-native-symbols && zip -q -r ../android-native-symbols.zip .) || true
+          if find android-native-symbols -type f -print -quit | grep -q .; then
+            (cd android-native-symbols && zip -q -r ../android-native-symbols.zip .)
+          fi
 
       - name: Upload installable debug APK
         if: success()
