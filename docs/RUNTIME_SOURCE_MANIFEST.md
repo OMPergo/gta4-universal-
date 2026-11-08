@@ -14,13 +14,14 @@ This file records the exact source revisions used by GTA IV Universal. Update it
 
 - Repository: https://github.com/OMPergo/XHYN-IV-recomp-multiplayer-1.0
 - Pinned audit commit: `be597d42d12abb04a552fd87e3853028499ae835`
+- Path in this repository: `runtime/xhyn-android` (Git submodule)
 - Role: Android implementation reference for runtime, installer, SDL/input, touch controls, GPU/driver and performance work.
 - Integration policy: keep Android platform glue in the Android adapter; port platform-neutral fixes only after comparing generated-code/API provenance with the iOS runtime.
 
 ## Shared project status
 
 - Universal diagnostics/performance/GPU/session core remains at the repository root.
-- The iOS runtime source is now present as a pinned submodule.
-- The Android runtime is not duplicated as a second submodule; it remains a pinned comparison source to avoid duplicate generated AOT code.
+- The iOS and Android platform runtime sources are both present as separately pinned submodules.
+- Android and iOS retain platform-specific implementations while the Universal root exposes opt-in build targets; generated runtime code is not blindly combined.
 - No GTA IV user data, TU8, title-update files, keys, saves, private crash reports, Apple credentials, or provisioning profiles belong in this repository.
 - A green core/link build is compile validation only. Device installation, GTA IV startup, playable controls/audio, and two-device multiplayer each require separate proof.
