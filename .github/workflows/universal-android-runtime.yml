@@ -46,24 +46,12 @@ jobs:
         run: |
           sdkmanager 'platform-tools' 'platforms;android-35' 'build-tools;35.0.0' 'ndk;29.0.14206865'
           echo "ANDROID_NDK=$ANDROID_HOME/ndk/29.0.14206865" >> "$GITHUB_ENV"
+          echo "NDK_VER=29.0.14206865" >> "$GITHUB_ENV"
           echo "ANDROID_NDK=$ANDROID_HOME/ndk/29.0.14206865"
 
-      - name: Initialize only required native build dependencies
+      - name: Initialize all pinned native runtime dependencies
         working-directory: runtime/xhyn-android
-        run: |
-          git submodule update --init --depth 1 --jobs 4 \
-            glue/rexglue-sdk-main/thirdparty/fmt \
-            glue/rexglue-sdk-main/thirdparty/spdlog \
-            glue/rexglue-sdk-main/thirdparty/imgui \
-            glue/rexglue-sdk-main/thirdparty/sdl3 \
-            glue/rexglue-sdk-main/thirdparty/simde \
-            glue/rexglue-sdk-main/thirdparty/xxHash \
-            glue/rexglue-sdk-main/thirdparty/cli11 \
-            glue/rexglue-sdk-main/thirdparty/tomlplusplus \
-            glue/rexglue-sdk-main/thirdparty/utfcpp \
-            glue/rexglue-sdk-main/thirdparty/vulkan-headers \
-            glue/rexglue-sdk-main/thirdparty/volk \
-            glue/rexglue-sdk-main/thirdparty/catch2
+        run: git submodule update --init --recursive --jobs 4
 
       - name: Configure Universal Android runtime bridge
         run: cmake -S . -B build-android-runtime -DUNIVERSAL_ENABLE_XHYN_ANDROID_RUNTIME=ON
@@ -75,7 +63,10 @@ jobs:
         run: |
           APK=runtime/xhyn-android/os/android/app/build/outputs/apk/debug/app-debug.apk
           test -s "$APK"
-          unzip -l "$APK" | grep -E 'lib/arm64-v8a/(libmain|librexruntime|libSDL3|libc\+\+_shared)\.so'
+          unzip -l "$APK" | grep -E 'lib/arm64-v8a/libmain\.so'
+          unzip -l "$APK" | grep -E 'lib/arm64-v8a/librexruntime\.so'
+          unzip -l "$APK" | grep -E 'lib/arm64-v8a/libSDL3\.so'
+          unzip -l "$APK" | grep -E 'lib/arm64-v8a/libc\+\+_shared\.so'
           sha256sum "$APK" | tee apk-sha256.txt
           du -h "$APK"
 
