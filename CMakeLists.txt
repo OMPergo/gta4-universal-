@@ -105,3 +105,33 @@ if(UNIVERSAL_ENABLE_THEFT4_IOS_RUNTIME)
         USES_TERMINAL
         COMMENT "Build pinned Theft4 iOS Simulator ARM64 runtime core/link probe")
 endif()
+
+
+# Optional bridge to the pinned Android LibertyRecomp runtime.
+option(UNIVERSAL_ENABLE_XHYN_ANDROID_RUNTIME
+    "Expose build targets for the pinned XHYN Android runtime submodule" OFF)
+
+if(UNIVERSAL_ENABLE_XHYN_ANDROID_RUNTIME)
+    set(UNIVERSAL_XHYN_SOURCE_DIR
+        "${CMAKE_CURRENT_SOURCE_DIR}/runtime/xhyn-android")
+
+    if(NOT EXISTS "${UNIVERSAL_XHYN_SOURCE_DIR}/os/android/scripts/build_native.sh")
+        message(FATAL_ERROR
+            "The pinned XHYN Android runtime is missing. Initialize submodule runtime/xhyn-android.")
+    endif()
+
+    add_custom_target(universal_android_arm64_runtime
+        COMMAND "${CMAKE_COMMAND}" -E env
+            "ANDROID_NDK=$ENV{ANDROID_NDK}"
+            bash os/android/scripts/build_native.sh 2
+        WORKING_DIRECTORY "${UNIVERSAL_XHYN_SOURCE_DIR}"
+        USES_TERMINAL
+        COMMENT "Build pinned XHYN Android ARM64 native runtime")
+
+    add_custom_target(universal_android_arm64_apk
+        COMMAND ./gradlew --no-daemon --max-workers=2 assembleDebug
+        WORKING_DIRECTORY "${UNIVERSAL_XHYN_SOURCE_DIR}/os/android"
+        DEPENDS universal_android_arm64_runtime
+        USES_TERMINAL
+        COMMENT "Package pinned XHYN Android runtime debug APK")
+endif()
