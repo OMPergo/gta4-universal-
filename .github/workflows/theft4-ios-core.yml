@@ -1,0 +1,83 @@
+name: Theft4 iOS Core Link Validation
+
+on:
+  push:
+    branches: ["integration/**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  theft4-ios-core:
+    name: Theft4 iOS \${{ matrix.target }} core/link probe
+    runs-on: macos-15
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: device-arm64
+            preset: ios-device-debug
+            sdk: device
+            artifact: theft4-ios-device-core-probe
+          - target: simulator-arm64
+            preset: ios-simulator-debug
+            sdk: simulator
+            artifact: theft4-ios-simulator-core-probe
+    steps:
+      - name: Checkout pinned Theft4 source
+        uses: actions/checkout@v4
+        with:
+          repository: KoreanSeats1/Theft4
+          ref: 88115fefad59cfcb62d17c0c9548a7a900c01a23
+          fetch-depth: 1
+          submodules: false
+
+      - name: Install build tools
+        run: |
+          brew install cmake ninja
+          python3 --version
+          cmake --version
+          ninja --version
+          xcodebuild -version
+          xcrun --sdk \${{ matrix.sdk == 'device' && 'iphoneos' || 'iphonesimulator' }} --show-sdk-version
+
+      - name: Initialize pinned dependencies and reviewed patches
+        run: python3 tools/setup_repo.py
+
+      - name: Configure Theft4 core-only preset
+        run: cmake --preset \${{ matrix.preset }}
+
+      - name: Build core and force-load link probe
+        run: cmake --build --preset \${{ matrix.preset }} --parallel 3
+
+      - name: Verify Mach-O platform and dynamic-code boundary
+        run: |
+          if [ "\${{ matrix.sdk }}" = "device" ]; then
+            BINARY="out/build/ios-device-debug/ios-smoke/Debug/rexcore_link_smoke.app/rexcore_link_smoke"
+          else
+            BINARY="out/build/ios-simulator-debug/ios-smoke/Debug/rexcore_link_smoke.app/rexcore_link_smoke"
+          fi
+          test -s "$BINARY"
+          python3 tests/ios/verify_core_artifact.py "$BINARY" --platform "\${{ matrix.sdk }}"
+
+      - name: Record source and build status
+        if: always()
+        run: |
+          echo "Theft4 source: $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Target: \${{ matrix.target }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Preset: \${{ matrix.preset }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Artifact: core/link probe only; not a UIKit app or installable IPA" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload unsigned core/link probe
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: \${{ matrix.artifact }}
+          path: |
+            out/build/\${{ matrix.preset }}/ios-smoke/
+            glue/rexglue-sdk-main/out/
+          if-no-files-found: error
+          retention-days: 7
