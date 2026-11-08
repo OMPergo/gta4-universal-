@@ -236,3 +236,22 @@ tree into every host/Android build. After the pinned iOS core/link matrix is
 green, wire the runtime's real startup and platform bridge targets into the
 Universal app shells. Do not label the current protocol scaffold as gameplay
 networking.
+
+
+## 10. Android runtime source is now pinned inside Universal
+
+The XHYN Android runtime is now a second Git submodule at `runtime/xhyn-android`,
+pinned to `be597d42d12abb04a552fd87e3853028499ae835`. Its Gradle project is a
+packaging layer; the actual ARM64 native runtime is built first by
+`os/android/scripts/build_native.sh`. The APK workflow must therefore build
+native libraries before invoking Gradle. It must not report a successful APK
+when native runtime libraries were absent.
+
+Universal now exposes opt-in targets
+`universal_android_arm64_runtime` and `universal_android_arm64_apk` when
+`UNIVERSAL_ENABLE_XHYN_ANDROID_RUNTIME=ON`. These targets are separate from the
+iOS runtime targets and do not force Android SDK/NDK requirements on host builds.
+
+The Android reference's current Gradle configuration targets API 35, minSdk 29,
+and ARM64. The native build consumes Android NDK 29.0.14206865. These values
+must be rechecked against the pinned build files when upgrading the source.
