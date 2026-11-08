@@ -1,3 +1,6 @@
 [submodule "runtime/theft4"]
 	path = runtime/theft4
 	url = https://github.com/KoreanSeats1/Theft4.git
+[submodule "runtime/xhyn-android"]
+	path = runtime/xhyn-android
+	url = https://github.com/OMPergo/XHYN-IV-recomp-multiplayer-1.0.git
