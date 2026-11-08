@@ -34,7 +34,7 @@ jobs:
           fetch-depth: 1
           submodules: false
 
-      - name: Initialize pinned Theft4 runtime source
+      - name: Initialize and verify pinned runtime source
         run: |
           git submodule update --init runtime/theft4
           test "$(git -C runtime/theft4 rev-parse HEAD)" = "88115fefad59cfcb62d17c0c9548a7a900c01a23"
@@ -49,14 +49,11 @@ jobs:
           xcodebuild -version
           xcrun --sdk ${{ matrix.sdk == 'device' && 'iphoneos' || 'iphonesimulator' }} --show-sdk-version
 
-      - name: Initialize pinned dependencies and reviewed patches
-        run: python3 tools/setup_repo.py
+      - name: Configure Universal shared-project runtime bridge
+        run: cmake -S . -B build-runtime-orchestrator -DUNIVERSAL_ENABLE_THEFT4_IOS_RUNTIME=ON
 
-      - name: Configure Theft4 core-only preset
-        run: cmake --preset ${{ matrix.preset }}
-
-      - name: Build core and force-load link probe
-        run: cmake --build --preset ${{ matrix.preset }} --parallel 3
+      - name: Build pinned runtime through the Universal target
+        run: cmake --build build-runtime-orchestrator --target ${{ matrix.target == 'device-arm64' && 'universal_ios_device_runtime_core' || 'universal_ios_simulator_runtime_core' }} --parallel 3
 
       - name: Verify Mach-O platform and dynamic-code boundary
         run: |
@@ -71,7 +68,8 @@ jobs:
       - name: Record source and build status
         if: always()
         run: |
-          echo "Theft4 source: $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Universal source: $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Theft4 source: $(git -C runtime/theft4 rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
           echo "Target: ${{ matrix.target }}" >> "$GITHUB_STEP_SUMMARY"
           echo "Preset: ${{ matrix.preset }}" >> "$GITHUB_STEP_SUMMARY"
           echo "Artifact: core/link probe only; not a UIKit app or installable IPA" >> "$GITHUB_STEP_SUMMARY"
