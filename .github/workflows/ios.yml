@@ -2,7 +2,7 @@ name: Apple iOS & iPadOS Build
 
 on:
   push:
-    branches: [main, "jules-*"]
+    branches: [main, "jules-*", "integration/**"]
   pull_request:
   workflow_dispatch:
 
@@ -25,7 +25,7 @@ jobs:
       - name: Build & Run Native Host Tests
         run: |
           cmake -B build-host -DCMAKE_BUILD_TYPE=Release
-          cmake --build build-host
+          cmake --build build-host --parallel
           ctest --test-dir build-host --output-on-failure
 
       - name: Configure and Build iOS Simulator Target
@@ -37,7 +37,7 @@ jobs:
           cmake --build build-ios-sim --config Release --target LibertyUniversalCore
 
   build-ios-device:
-    name: iOS ARM64 Device Target Build (Unsigned)
+    name: iOS ARM64 Device Core Build (Unsigned; Not an IPA)
     runs-on: macos-14
     steps:
       - name: Checkout Repository
@@ -57,3 +57,32 @@ jobs:
             -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED="NO" \
             -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED="NO"
           cmake --build build-ios-dev --config Release --target LibertyUniversalCore
+
+      - name: Stage Explicit Core-Only Artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/ios-core
+          DEVICE_LIB="$(find build-ios-dev -type f -name 'libLibertyUniversalCore.a' -print -quit)"
+          test -n "$DEVICE_LIB"
+          cp "$DEVICE_LIB" dist/ios-core/libLibertyUniversalCore-iphoneos-arm64.a
+          cat > dist/ios-core/BUILD-STATUS.txt <<'EOF'
+          GTA IV Universal iOS build artifact
+          Artifact type: static core library only
+          Platform: iPhoneOS ARM64
+          Signing: none
+          Installable IPA: NO
+          Complete Theft4/LibertyRecomp game runtime: NOT INCLUDED
+          App bundle / UIKit launcher: NOT INCLUDED
+          Game data: NOT INCLUDED
+          This artifact is for engineering integration only and cannot be installed on an iPhone.
+          EOF
+          shasum -a 256 dist/ios-core/libLibertyUniversalCore-iphoneos-arm64.a > dist/ios-core/SHA256SUMS.txt
+
+      - name: Upload Core-Only Engineering Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gta4-universal-ios-core-unsigned
+          path: dist/ios-core/
+          if-no-files-found: error
+          retention-days: 14
