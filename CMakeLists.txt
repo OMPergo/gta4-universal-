@@ -70,3 +70,38 @@ add_test(NAME MediaIdValidatorTest COMMAND test_media_id_validator)
 add_executable(run_all_tests tests/unit/run_all_tests.cpp)
 target_link_libraries(run_all_tests PRIVATE LibertyUniversalCore)
 add_test(NAME AllSubsystemsTest COMMAND run_all_tests)
+
+
+# Optional bridge to the pinned, full LibertyRecomp/Theft4 iOS runtime source.
+# It is deliberately opt-in: the Universal host/Android core remains buildable
+# without Apple's SDK or the iOS-only CMake 3.29/C++23 runtime toolchain.
+option(UNIVERSAL_ENABLE_THEFT4_IOS_RUNTIME
+    "Expose build targets for the pinned Theft4 iOS runtime submodule" OFF)
+
+if(UNIVERSAL_ENABLE_THEFT4_IOS_RUNTIME)
+    set(UNIVERSAL_THEFT4_SOURCE_DIR
+        "${CMAKE_CURRENT_SOURCE_DIR}/runtime/theft4")
+
+    if(NOT EXISTS "${UNIVERSAL_THEFT4_SOURCE_DIR}/CMakePresets.json")
+        message(FATAL_ERROR
+            "The pinned Theft4 runtime is missing. Initialize submodule runtime/theft4.")
+    endif()
+
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+
+    add_custom_target(universal_ios_device_runtime_core
+        COMMAND "${Python3_EXECUTABLE}" tools/setup_repo.py
+        COMMAND "${CMAKE_COMMAND}" --preset ios-device-debug
+        COMMAND "${CMAKE_COMMAND}" --build --preset ios-device-debug --parallel 3
+        WORKING_DIRECTORY "${UNIVERSAL_THEFT4_SOURCE_DIR}"
+        USES_TERMINAL
+        COMMENT "Build pinned Theft4 iPhoneOS ARM64 runtime core/link probe")
+
+    add_custom_target(universal_ios_simulator_runtime_core
+        COMMAND "${Python3_EXECUTABLE}" tools/setup_repo.py
+        COMMAND "${CMAKE_COMMAND}" --preset ios-simulator-debug
+        COMMAND "${CMAKE_COMMAND}" --build --preset ios-simulator-debug --parallel 3
+        WORKING_DIRECTORY "${UNIVERSAL_THEFT4_SOURCE_DIR}"
+        USES_TERMINAL
+        COMMENT "Build pinned Theft4 iOS Simulator ARM64 runtime core/link probe")
+endif()
