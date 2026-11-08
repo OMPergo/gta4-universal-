@@ -182,3 +182,29 @@ The next code-level comparison should inspect the five extra XHYN generated
 translation units and the corresponding registration/function-table changes,
 then map shared runtime fixes file-by-file. No generated code should be deleted,
 renamed, or mixed until that provenance comparison is complete.
+
+
+### Generated-code inventory follow-up
+
+The five XHYN-only generated chunks are present in the OMPergo mirror and absent
+from the pinned Theft4 tree at the same paths. Their XHYN mirror blob identifiers
+are:
+
+| Generated source | XHYN mirror blob SHA | Theft4 snapshot |
+|---|---|---|
+| `gta4_recomp.84.cpp` | `79286bed098d1b9d729f426d89e9f41905070d13` | Not present |
+| `gta4_recomp.85.cpp` | `49b396abb9fbed43c8a2f1a4e87f3ed2537294f4` | Not present |
+| `gta4_recomp.86.cpp` | `b2397cef9ef07fbc7824246a638dd27db2e579a1` | Not present |
+| `gta4_recomp.87.cpp` | `2400706362d6179bd656bfa04587714276abc37c` | Not present |
+| `gta4_recomp.88.cpp` | `ac3a9561cf57a3a7fb5105621a3c8e65c6154711` | Not present |
+
+The generated registration source also differs: Theft4 blob
+`7dc9078ce6b7797e24cc625676b1815d1bae1ece`; XHYN mirror blob
+`7bb3816c824dc2362146cfd0fd1e55af1f67420d`. The GitHub content endpoint did
+not return the large generated file bodies in this audit, so these hashes are
+identity evidence only; they are not a semantic function-by-function diff.
+
+This means the five chunks must not simply be appended to Theft4's source list.
+The next audit must identify which generated functions/registrations they add,
+whether the XHYN source generator/config differs, and whether the new chunks
+depend on runtime APIs not present in the Theft4 baseline.
