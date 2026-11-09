@@ -60,10 +60,20 @@ mobile_new = '''
     }});
     static void ensureDefaults(File file)throws IOException {ensureDefaults(file,false);}
     static void ensureDefaults(File file,boolean lowEnd)throws IOException {
-        Map<String,String> saved=read(file),defaults=new LinkedHashMap<>(DEFAULTS),missing=new LinkedHashMap<>();
-        if(lowEnd)defaults.putAll(LOW_END_DEFAULTS);
-        for(Map.Entry<String,String> e:defaults.entrySet())if(!saved.containsKey(e.getKey()))missing.put(e.getKey(),e.getValue());
+        Map<String,String> saved=read(file),missing=new LinkedHashMap<>();
+        for(Map.Entry<String,String> e:DEFAULTS.entrySet())if(!saved.containsKey(e.getKey()))missing.put(e.getKey(),e.getValue());
         if(!missing.isEmpty())update(file,missing);
+        if(lowEnd) {
+            File marker=new File(file.getParentFile(),"universal-low-end-profile-v1.applied");
+            if(!marker.isFile()) {
+                // Apply the measured A14 preset once; preserve later player edits.
+                update(file,LOW_END_DEFAULTS);
+                try(FileOutputStream out=new FileOutputStream(marker)) {
+                    out.write("profile=v1\\ndevice-class=low-end\\n".getBytes(StandardCharsets.UTF_8));
+                    out.getFD().sync();
+                }
+            }
+        }
     }'''
 replace_once("os/android/app/src/main/java/com/libertyrecomp/MobileConfig.java",mobile_old,mobile_new)
 
@@ -84,6 +94,12 @@ replace_once("os/android/app/src/main/java/com/libertyrecomp/LauncherActivity.ja
 replace_once("os/android/app/src/main/java/com/libertyrecomp/LauncherActivity.java",
     "MobileConfig.ensureDefaults(MobileConfig.file(mDataRoot));",
     "MobileConfig.ensureDefaults(MobileConfig.file(mDataRoot),isLowEndDevice());")
+replace_once("os/android/app/src/main/java/com/libertyrecomp/LauncherActivity.java",
+    'TextView brand=ModernUi.text(this,"XHYN IV",38,ModernUi.TEXT);',
+    'TextView brand=ModernUi.text(this,"GTA IV UNIVERSAL",34,ModernUi.TEXT);')
+replace_once("os/android/app/src/main/java/com/libertyrecomp/LauncherActivity.java",
+    'LinearLayout footer=new LinearLayout(this);footer.setGravity(Gravity.CENTER_VERTICAL);footer.addView(ModernUi.text(this,versionLine(),11,ModernUi.MUTED),new LinearLayout.LayoutParams(-2,-2));LinearLayout links=new LinearLayout(this);links.setGravity(Gravity.END|Gravity.CENTER_VERTICAL);addFooterLink(links,"YouTube ↗","https://youtube.com/@xhyn_ph");addFooterLink(links,"Telegram ↗","https://t.me/xhynports");addFooterLink(links,"GitHub ↗","https://github.com/XHYN-PH/XHYN-IV-recomp");HorizontalScrollView linkStrip=new HorizontalScrollView(this);linkStrip.setHorizontalScrollBarEnabled(false);linkStrip.setFillViewport(true);linkStrip.addView(links);footer.addView(linkStrip,new LinearLayout.LayoutParams(0,-2,1));root.addView(footer,matchWrap(dp(3)));',
+    'LinearLayout footer=new LinearLayout(this);footer.setGravity(Gravity.CENTER_VERTICAL);footer.addView(ModernUi.text(this,"GTA IV UNIVERSAL  ·  "+versionLine(),11,ModernUi.MUTED),new LinearLayout.LayoutParams(-2,-2));root.addView(footer,matchWrap(dp(3)));')
 
 replace_once("os/android/app/build.gradle.kts",
     'applicationId = "com.xhyn.ivrecomp"',
