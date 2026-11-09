@@ -36,6 +36,20 @@ replace_once(manifest, 'android:roundIcon="@mipmap/ic_launcher_round"', 'android
 gradle = "os/android/app/build.gradle.kts"
 replace_once(gradle, 'versionCode = 1\n        versionName   = "0.1.0-universal-lowend-alpha"',
              'versionCode = 41\n        versionName   = "0.5.9.4-universal-alpha"')
+replace_once(launcher, 'Uri.parse("https://github.com/vaduur/LibertyRecompAndroid")',
+             'Uri.parse("https://github.com/OMPergo/gta4-universal-")')
+replace_once(launcher, 'toast("github.com/vaduur/LibertyRecompAndroid")',
+             'toast("github.com/OMPergo/gta4-universal-")')
+replace_once(launcher, 'ClipData.newPlainText("XHYN IV"',
+             'ClipData.newPlainText("GTA IV Universal"')
+replace_once(launcher, 'Intent.EXTRA_TITLE,"XHYN-IV-"',
+             'Intent.EXTRA_TITLE,"GTA4-Universal-"')
+replace_once(launcher, 'Intent.EXTRA_TITLE,"XHYN-IV-slot-"',
+             'Intent.EXTRA_TITLE,"GTA4-Universal-slot-"')
+replace_once(launcher, 'Intent.EXTRA_TITLE,"XHYN-IV-saves.zip"',
+             'Intent.EXTRA_TITLE,"GTA4-Universal-saves.zip"')
+replace_once(launcher, 'GitHub (vaduur/LibertyRecompAndroid)',
+             'GitHub (OMPergo/gta-4-title-8-update)')
 if not (root / "os/android/app/src/main/res/drawable-nodpi/app_icon.png").is_file():
     raise SystemExit("Universal launcher icon asset is missing")
 print("Applied GTA IV Universal title, pinned Liberty City artwork, custom app icon, and clean footer.")
