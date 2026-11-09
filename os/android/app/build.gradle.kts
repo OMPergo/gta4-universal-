@@ -16,8 +16,8 @@ android {
         applicationId = "com.xhyn.ivrecomp"
         minSdk        = 29
         targetSdk     = 35
-        versionCode   = 41
-        versionName   = "0.5.9.4-universal-alpha"
+        versionCode   = 40
+        versionName   = "0.5.9.3-universal-alpha"
 
         ndk {
             abiFilters += listOf("arm64-v8a")
