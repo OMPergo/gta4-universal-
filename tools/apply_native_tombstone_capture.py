@@ -74,5 +74,8 @@ archive_path = "os/android/app/src/main/java/com/libertyrecomp/DebugLogArchive.j
 replace_once(archive_path,
  'new String[]{"last-session.properties","previous-exit.properties","previous-launcher-exit.properties","launcher-crash.txt"}',
  'new String[]{"last-session.properties","previous-exit.properties","previous-launcher-exit.properties","previous-native-crash.txt","launcher-crash.txt"}')
+replace_once(archive_path,
+ 'if(f.isFile()&&!java.nio.file.Files.isSymbolicLink(f.toPath())&&f.length()<=65536)add(zip,f,"context/"+name);',
+ 'if(f.isFile()&&!java.nio.file.Files.isSymbolicLink(f.toPath())&&(f.length()<=65536||(name.equals("previous-native-crash.txt")&&f.length()<=4L*1024*1024)))add(zip,f,"context/"+name);')
 print("Added API 31+ native tombstone capture for signal-11 / native crashes in the game process.")
 print("The next debug archive will include context/previous-native-crash.txt when Android provides a trace.")
