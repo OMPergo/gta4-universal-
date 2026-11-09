@@ -27,7 +27,7 @@ def replace_once(path: str, old: str, new: str) -> None:
 
 mobile_old = '    static void ensureDefaults(File file)throws IOException {Map<String,String> saved=read(file),missing=new LinkedHashMap<>();for(Map.Entry<String,String> e:DEFAULTS.entrySet())if(!saved.containsKey(e.getKey()))missing.put(e.getKey(),e.getValue());if(!missing.isEmpty())update(file,missing);}'
 mobile_new = '''
-    // The low-end profile is selected from device RAM/GPU by the launcher.
+    // The low-end profile is selected by the launcher using total device RAM.
     // It only fills missing settings; a player can still change every option.
     private static final Map<String,String> LOW_END_DEFAULTS=Collections.unmodifiableMap(new LinkedHashMap<String,String>(){{
         put("resolution","720p");
