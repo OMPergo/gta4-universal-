@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref_name }}
+  group: universal-android-runtime-v2-${{ github.ref_name }}
   cancel-in-progress: true
 
 permissions:
