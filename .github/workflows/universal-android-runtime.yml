@@ -2,7 +2,7 @@ name: Universal Android Runtime APK
 
 on:
   push:
-    branches: ["integration/**"]
+    branches: ["integration/**", "test/**"]
   workflow_dispatch:
 
 concurrency:
@@ -21,7 +21,7 @@ jobs:
       - name: Checkout Universal project
         uses: actions/checkout@v4
         with:
-          ref: integration/theft4-ios-xhyn-multiplatform
+          ref: ${{ github.ref }}
           fetch-depth: 1
           submodules: false
 
@@ -111,7 +111,7 @@ jobs:
           AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
           APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
           "$AAPT" dump badging "$DEBUG_APK" | tee android-package.txt
-          grep -q "package: name='com.ompergo.gta4universal'" android-package.txt
+          grep -q "package: name='com.ompergo.gta4universal.test'" android-package.txt
           grep -q "application-label:'GTA IV Universal'" android-package.txt
           "$APKSIGNER" verify --verbose "$DEBUG_APK"
           for lib in libmain.so librexruntime.so libSDL3.so libc++_shared.so libvulkan.so libmain_hook.so libhook_impl.so libc11_threads_compat.so; do
@@ -123,7 +123,7 @@ jobs:
           stat -c 'Release APK size: %s bytes' "$RELEASE_APK"
           {
             echo "## Android ARM64 APK"
-            echo "- App ID: com.ompergo.gta4universal"
+            echo "- App ID: com.ompergo.gta4universal.test"
             echo "- Android min SDK: 29 (Android 10)"
             echo "- Android target SDK: 35"
             echo "- ABI: arm64-v8a"
