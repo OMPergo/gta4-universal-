@@ -32,15 +32,13 @@ directory. Existing installations are not overwritten.
 - GPU turbo disabled to avoid forcing sustained heat/power draw
 - Adaptive audio buffering retained
 
-The settings are written only when a key is absent. Players can change them in
-the in-app settings afterward. The profile does not alter game data, title
-updates, saves, or user files.
+On the first Universal launch on a detected low-end device, the profile is applied once and recorded with a marker in the app's settings directory. This intentionally replaces conflicting inherited graphics values for the initial A14 test; subsequent launches preserve player edits. The profile does not alter game data, title updates, saves, or user files.
 
 ## Mali-specific findings and guardrails
 
-The uploaded Galaxy A14 capture reports that Mali-G57 MC2 lacks native BC1/BC2/BC3
+The November 8 uploaded Galaxy A14 capture reports that Mali-G57 MC2 lacks native BC1/BC2/BC3
 texture sampling. The pinned runtime already has CPU fallback decoders for
-those formats and a bounded single-helper texture decode path that respects
+those formats and a bounded texture decode path with at most two helper threads that respects
 Android CPU affinity. Do not force extra decode threads without device traces.
 
 The capture also reports that `shaderClipDistance` is unavailable. The
