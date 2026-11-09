@@ -68,7 +68,7 @@ source=(root/capture_path).read_text(encoding="utf-8")
 anchor=" static String label(int reason){"
 if capture_helper.strip() not in source:
     if source.count(anchor)!=1: raise SystemExit("Could not locate exit label helper")
-    (root/capture_path).write_text(source.replace(anchor,capture_helper+"\\n"+anchor),encoding="utf-8")
+    (root/capture_path).write_text(source.replace(anchor,capture_helper+"\n"+anchor),encoding="utf-8")
 
 archive_path = "os/android/app/src/main/java/com/libertyrecomp/DebugLogArchive.java"
 replace_once(archive_path,
