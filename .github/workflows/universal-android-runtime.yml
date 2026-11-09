@@ -35,6 +35,27 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      # Keep the alpha debug signature stable across CI runs so test APKs
+      # can update in place and preserve the device's shader/pipeline caches.
+      - name: Restore stable alpha debug signing key
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: gta4-universal-alpha-debug-keystore-v1
+
+      - name: Ensure stable alpha debug signing key
+        run: |
+          mkdir -p "$HOME/.android"
+          if [ ! -f "$HOME/.android/debug.keystore" ]; then
+            keytool -genkeypair -v \
+              -keystore "$HOME/.android/debug.keystore" \
+              -storepass android \
+              -alias androiddebugkey \
+              -keypass android \
+              -dname "CN=Android Debug,O=GTA IV Universal,C=US" \
+              -keyalg RSA -keysize 2048 -validity 10000
+          fi
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
