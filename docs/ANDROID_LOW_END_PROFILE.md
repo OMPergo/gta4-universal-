@@ -7,10 +7,11 @@ Git submodule; this repository stores a deterministic build-time patch at
 
 ## Automatic detection
 
-The Universal Android app uses the low-end defaults on first launch when
-Android reports **6 GiB RAM or less**, or the detected renderer is **Mali-G57**.
-This includes the Galaxy A14 5G / Mali-G57 MC2 target. Devices outside that
-threshold retain the upstream baseline defaults.
+The Universal Android app applies the low-end defaults on first launch when
+Android reports **6 GiB RAM or less**. Detection currently uses total device RAM
+only; it does **not** independently detect Mali-G57 or other GPU models. The
+Galaxy A14 5G qualifies because its reported total RAM is below this threshold.
+Devices above the threshold retain the upstream baseline defaults.
 
 The Universal Android application ID is `com.ompergo.gta4universal`, so it
 installs separately from the upstream XHYN app and starts with its own settings
@@ -36,7 +37,7 @@ On the first Universal launch on a detected low-end device, the profile is appli
 
 ## Mali-specific findings and guardrails
 
-The November 8 uploaded Galaxy A14 capture reports that Mali-G57 MC2 lacks native BC1/BC2/BC3
+The November 9, 2026 Galaxy A14 diagnostic capture reports that Mali-G57 MC2 lacks native BC1/BC2/BC3
 texture sampling. The pinned runtime already has CPU fallback decoders for
 those formats and a bounded texture decode path with at most two helper threads that respects
 Android CPU affinity. Do not force extra decode threads without device traces.
