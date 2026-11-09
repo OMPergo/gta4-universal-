@@ -91,12 +91,6 @@ replace_once("os/android/app/src/main/java/com/libertyrecomp/LauncherActivity.ja
 replace_once("os/android/app/src/main/java/com/libertyrecomp/LauncherActivity.java",
     "MobileConfig.ensureDefaults(MobileConfig.file(mDataRoot));",
     "MobileConfig.ensureDefaults(MobileConfig.file(mDataRoot),isLowEndDevice());")
-replace_once("os/android/app/src/main/java/com/libertyrecomp/LauncherActivity.java",
-    'TextView brand=ModernUi.text(this,"XHYN IV",38,ModernUi.TEXT);',
-    'TextView brand=ModernUi.text(this,"GTA IV UNIVERSAL",34,ModernUi.TEXT);')
-replace_once("os/android/app/src/main/java/com/libertyrecomp/LauncherActivity.java",
-    'LinearLayout footer=new LinearLayout(this);footer.setGravity(Gravity.CENTER_VERTICAL);footer.addView(ModernUi.text(this,versionLine(),11,ModernUi.MUTED),new LinearLayout.LayoutParams(-2,-2));LinearLayout links=new LinearLayout(this);links.setGravity(Gravity.END|Gravity.CENTER_VERTICAL);addFooterLink(links,"YouTube ↗","https://youtube.com/@xhyn_ph");addFooterLink(links,"Telegram ↗","https://t.me/xhynports");addFooterLink(links,"GitHub ↗","https://github.com/XHYN-PH/XHYN-IV-recomp");HorizontalScrollView linkStrip=new HorizontalScrollView(this);linkStrip.setHorizontalScrollBarEnabled(false);linkStrip.setFillViewport(true);linkStrip.addView(links);footer.addView(linkStrip,new LinearLayout.LayoutParams(0,-2,1));root.addView(footer,matchWrap(dp(3)));',
-    'LinearLayout footer=new LinearLayout(this);footer.setGravity(Gravity.CENTER_VERTICAL);footer.addView(ModernUi.text(this,"GTA IV UNIVERSAL  ·  "+versionLine(),11,ModernUi.MUTED),new LinearLayout.LayoutParams(-2,-2));root.addView(footer,matchWrap(dp(3)));')
 
 replace_once("os/android/app/build.gradle.kts",
     'applicationId = "com.xhyn.ivrecomp"',
@@ -107,7 +101,7 @@ replace_once("os/android/app/build.gradle.kts",
 replace_once("os/android/app/src/main/res/values/strings.xml",
     '<string name="app_name">XHYN IV</string>',
     '<string name="app_name">GTA IV Universal</string>')
-print("Applied GTA IV Universal branding and low-end defaults.")
-print("Detection: <=6 GiB RAM or Mali-G57 renderer.")
+print("Applied Universal low-end defaults; launcher branding is handled by the dedicated branding patch.")
+print("Detection: Android total memory <=6 GiB.")
 print("Preset: FSR1 performance, 30 FPS, 2 queued frames, reduced draw/reflection/shadow load, thermal guard.")
 print("Existing per-user settings are preserved; only missing settings receive defaults.")
