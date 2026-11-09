@@ -41,7 +41,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.android/debug.keystore
-          key: gta4-universal-alpha-debug-keystore-v1
+          key: gta4-universal-alpha-debug-keystore-v2
+          restore-keys: |
+            gta4-universal-alpha-debug-keystore-v1
 
       - name: Ensure stable alpha debug signing key
         run: |
