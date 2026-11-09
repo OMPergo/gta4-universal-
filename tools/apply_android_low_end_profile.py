@@ -80,15 +80,12 @@ replace_once("os/android/app/src/main/java/com/libertyrecomp/MobileConfig.java",
 launcher_old='    private boolean mBusy;'
 launcher_new='''    private boolean mBusy;
 
-    /** Conservative defaults for devices with <=6 GiB RAM or Mali-G57-class GPU. */
+    /** Conservative defaults for devices with 6 GiB RAM or less. */
     private boolean isLowEndDevice() {
         ActivityManager manager=(ActivityManager)getSystemService(Context.ACTIVITY_SERVICE);
         ActivityManager.MemoryInfo memory=new ActivityManager.MemoryInfo();
         if(manager!=null)manager.getMemoryInfo(memory);
-        String renderer=GpuInfo.renderer().toLowerCase(Locale.ROOT);
-        boolean lowMemory=memory.totalMem>0&&memory.totalMem<=6L*1024L*1024L*1024L;
-        boolean targetMali=renderer.contains("mali-g57");
-        return lowMemory||targetMali;
+        return memory.totalMem>0&&memory.totalMem<=6L*1024L*1024L*1024L;
     }'''
 replace_once("os/android/app/src/main/java/com/libertyrecomp/LauncherActivity.java",launcher_old,launcher_new)
 replace_once("os/android/app/src/main/java/com/libertyrecomp/LauncherActivity.java",
