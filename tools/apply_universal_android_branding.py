@@ -36,7 +36,7 @@ replace_once(manifest, 'android:roundIcon="@mipmap/ic_launcher_round"', 'android
 gradle = "os/android/app/build.gradle.kts"
 replace_once(gradle, 'applicationId = "com.xhyn.ivrecomp"',
              'applicationId = "com.ompergo.gta4universal.test"')
-replace_once(gradle, 'versionCode = 1\n        versionName   = "0.1.0-universal-lowend-alpha"',
+replace_once(gradle, 'versionCode = 40\n        versionName   = "0.5.9.3-xhyn-r2-test12"',
              'versionCode = 41\n        versionName   = "0.5.9.4-universal-alpha"')
 replace_once(launcher, 'Uri.parse("https://github.com/vaduur/LibertyRecompAndroid")',
              'Uri.parse("https://github.com/OMPergo/gta4-universal-")')
