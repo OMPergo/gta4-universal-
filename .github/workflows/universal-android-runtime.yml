@@ -1,3 +1,4 @@
+# Retry after aligning branding patch with low-end profile Gradle rewrite.
 # Trigger the parallel-install package validation build after the Gradle-anchor fix.
 name: Universal Android Runtime APK
 
