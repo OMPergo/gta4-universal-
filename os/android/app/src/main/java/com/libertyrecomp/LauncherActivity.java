@@ -39,6 +39,14 @@ public class LauncherActivity extends Activity {
         });
         layout.addView(playButton);
 
+        Button multiplayerButton = new Button(this);
+        multiplayerButton.setText("Multiplayer");
+        multiplayerButton.setOnClickListener(v -> {
+            Intent intent = new Intent(this, MultiplayerActivity.class);
+            startActivity(intent);
+        });
+        layout.addView(multiplayerButton);
+
         setContentView(layout);
     }
 }
