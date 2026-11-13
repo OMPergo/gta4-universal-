@@ -35,7 +35,7 @@ ResourceBudgetPlan ComputeResourceBudgetPlan(const ResourceBudgetInputs& inputs)
   const uint64_t usable = ceiling - plan.safety_reserve_bytes;
   plan.texture_bytes = std::min(inputs.preferred_texture_budget_bytes, usable / 4);
   plan.streaming_bytes = std::min(inputs.preferred_streaming_budget_bytes, usable / 8);
-  plan.decode_scratch_bytes = std::min(inputs.preferred_decode_scratch_bytes, usable / 16);
+  plan.decode_scratch_bytes = std::min(inputs.preferred_decode_scratch_budget_bytes, usable / 16);
   plan.runtime_bytes = usable - plan.texture_bytes - plan.streaming_bytes -
                        plan.decode_scratch_bytes;
   return plan;
