@@ -34,8 +34,8 @@ manifest = "os/android/app/src/main/AndroidManifest.xml"
 replace_once(manifest, 'android:icon="@mipmap/ic_launcher"', 'android:icon="@drawable/app_icon"')
 replace_once(manifest, 'android:roundIcon="@mipmap/ic_launcher_round"', 'android:roundIcon="@drawable/app_icon"')
 gradle = "os/android/app/build.gradle.kts"
-replace_once(gradle, 'versionCode = 10001\n        versionName   = "1.0-alpha.1"',
-             'versionCode = 41\n        versionName   = "0.5.9.4-universal-alpha"')
+replace_once(gradle, 'versionCode = 1\n        versionName   = "0.1.0-universal-lowend-alpha"',
+             'versionCode = 10001\n        versionName   = "1.0-alpha.1"')
 replace_once(launcher, 'Uri.parse("https://github.com/vaduur/LibertyRecompAndroid")',
              'Uri.parse("https://github.com/OMPergo/gta4-universal-")')
 replace_once(launcher, 'toast("github.com/vaduur/LibertyRecompAndroid")',
