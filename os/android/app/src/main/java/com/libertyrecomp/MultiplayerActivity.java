@@ -300,7 +300,9 @@ public final class MultiplayerActivity extends Activity {
         byte[] nameBytes = new byte[32];
         data.position(14);
         data.get(nameBytes);
-        String name = new String(nameBytes, StandardCharsets.UTF_8).replace("\u0000", "").trim();
+        int nameLength = 0;
+        while (nameLength < nameBytes.length && nameBytes[nameLength] != 0) nameLength++;
+        String name = new String(nameBytes, 0, nameLength, StandardCharsets.UTF_8).trim();
         int players = data.get(46) & 0xff;
         int maxPlayers = data.get(47) & 0xff;
         long revision = data.getInt(48) & 0xffffffffL;
