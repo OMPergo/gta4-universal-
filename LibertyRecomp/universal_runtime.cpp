@@ -1,4 +1,5 @@
 #include "universal_runtime.h"
+#include "diagnostics/resource_budget.h"
 #include <filesystem>
 #include <sstream>
 
@@ -16,6 +17,19 @@ bool UniversalRuntime::Initialize(const std::string& storage_path) {
   status_.hardware_report = Diagnostics::DetectHostHardwareCapabilities();
   status_.active_graphics_settings = Diagnostics::GetTunedSettingsForTier(
       status_.hardware_report.recommended_tier, status_.hardware_report);
+  // Policy ceilings only; allocators must reserve/release against these limits.
+  Diagnostics::ResourceBudgetInputs budget_inputs;
+  budget_inputs.process_budget_bytes = status_.hardware_report.memory.conservative_budget_bytes;
+  budget_inputs.preferred_texture_budget_bytes = status_.active_graphics_settings.texture_memory_budget_bytes;
+  budget_inputs.preferred_streaming_budget_bytes = status_.active_graphics_settings.streaming_cache_budget_bytes;
+  budget_inputs.preferred_decode_scratch_budget_bytes = status_.active_graphics_settings.decode_scratch_budget_bytes;
+  const auto budget_plan = Diagnostics::ComputeResourceBudgetPlan(budget_inputs);
+  if (budget_plan.IsValid()) {
+    status_.active_graphics_settings.texture_memory_budget_bytes = budget_plan.texture_bytes;
+    status_.active_graphics_settings.streaming_cache_budget_bytes = budget_plan.streaming_bytes;
+    status_.active_graphics_settings.decode_scratch_budget_bytes = budget_plan.decode_scratch_bytes;
+  }
+
   status_.gpu_workarounds = Gpu::EvaluateGpuWorkarounds(status_.hardware_report);
 
   status_.state = RuntimeInitState::HardwareProbed;
@@ -53,7 +67,7 @@ bool UniversalRuntime::AttemptVulkanInitialization() {
 
   // Hardware-specific workaround configuration
   if (status_.hardware_report.gpu_vendor == Diagnostics::GpuVendor::ArmMali) {
-    status_.gpu_workarounds.mali_clip_distance_workaround = true;
+    // Clip-distance emulation is not implemented; do not claim it is active.
     status_.gpu_workarounds.mali_subpass_load_fallback = true;
   }
 

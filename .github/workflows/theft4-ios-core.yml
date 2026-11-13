@@ -21,7 +21,7 @@ jobs:
       - name: Checkout Universal shared project
         uses: actions/checkout@v4
         with:
-          ref: integration/theft4-ios-xhyn-multiplatform
+          ref: ${{ github.ref }}
           fetch-depth: 1
           submodules: false
 
@@ -35,12 +35,17 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Select Xcode and install CMake
+      - name: Select Xcode and install CMake + LLVM
         run: |
           xcode-select -p
           xcodebuild -version
           xcrun --sdk iphoneos --show-sdk-version
-          brew install cmake
+          brew install cmake llvm
+          LLVM_PREFIX="$(brew --prefix llvm)"
+          echo "$LLVM_PREFIX/bin" >> "$GITHUB_PATH"
+          echo "CC=$LLVM_PREFIX/bin/clang" >> "$GITHUB_ENV"
+          echo "CXX=$LLVM_PREFIX/bin/clang++" >> "$GITHUB_ENV"
+          "$LLVM_PREFIX/bin/clang++" --version
 
       - name: Apply pinned dependency patches
         working-directory: runtime/theft4
@@ -99,7 +104,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: gta4-universal-ios-arm64-unsigned-ipa
+          name: gta4-universal-1.0-alpha.1-ios-arm64-unsigned-ipa
           path: |
             ${{ runner.temp }}/GTA-IV-Universal-ios-arm64-unsigned.ipa
             ${{ runner.temp }}/ios-ipa-sha256.txt

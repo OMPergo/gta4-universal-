@@ -13,7 +13,23 @@ permissions:
   contents: read
 
 jobs:
+  host-core-tests:
+    name: Universal host core tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          submodules: false
+      - name: Configure, compile, and run host tests
+        run: |
+          cmake -S . -B build-host -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-host --parallel 2
+          ctest --test-dir build-host --output-on-failure
+
   android-arm64-runtime-apk:
+    needs: host-core-tests
     name: Optimized ARM64 runtime + installable Universal APK
     runs-on: ubuntu-24.04
     timeout-minutes: 180
@@ -21,7 +37,7 @@ jobs:
       - name: Checkout Universal project
         uses: actions/checkout@v4
         with:
-          ref: integration/theft4-ios-xhyn-multiplatform
+          ref: ${{ github.ref }}
           fetch-depth: 1
           submodules: false
 
@@ -170,7 +186,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: gta4-universal-android-arm64-debug-apk
+          name: gta4-universal-1.0-alpha.1-android-arm64-debug-apk
           path: |
             runtime/xhyn-android/os/android/app/build/outputs/apk/debug/app-debug.apk
             android-package.txt
@@ -182,7 +198,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: gta4-universal-android-arm64-release-unsigned
+          name: gta4-universal-1.0-alpha.1-android-arm64-release-unsigned
           path: runtime/xhyn-android/os/android/app/build/outputs/apk/release/app-release-unsigned.apk
           if-no-files-found: error
           retention-days: 14
@@ -191,7 +207,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: gta4-universal-android-native-symbols
+          name: gta4-universal-1.0-alpha.1-android-native-symbols
           path: android-native-symbols.zip
           if-no-files-found: ignore
           retention-days: 7
