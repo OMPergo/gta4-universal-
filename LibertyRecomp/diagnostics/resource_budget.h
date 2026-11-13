@@ -7,7 +7,7 @@ struct ResourceBudgetInputs {
   uint64_t available_system_bytes = 0;
   uint64_t preferred_texture_budget_bytes = 0;
   uint64_t preferred_streaming_budget_bytes = 0;
-  uint64_t preferred_decode_scratch_bytes = 0;
+  uint64_t preferred_decode_scratch_budget_bytes = 0;
 };
 struct ResourceBudgetPlan {
   uint64_t process_budget_bytes = 0;
