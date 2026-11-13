@@ -43,6 +43,7 @@ public final class MultiplayerActivity extends Activity {
     private TextView networkSummary;
     private TextView onlineSummary;
     private TextView lanSummary;
+    private TextView directSummary;
     private TextView sessionSummary;
     private LinearLayout serverList;
     private Button refreshButton;
@@ -105,6 +106,8 @@ public final class MultiplayerActivity extends Activity {
                 "Community server directory is not connected yet.");
         lanSummary = addSection(root, "LOCAL NETWORK (LAN)",
                 "Preparing local discovery…");
+        directSummary = addSection(root, "DIRECT CONNECT",
+                "Direct-IP joining is not available until the session transport handshake is implemented.");
         sessionSummary = addSection(root, "YOUR SESSION",
                 "No multiplayer session is active.");
 
@@ -289,7 +292,7 @@ public final class MultiplayerActivity extends Activity {
     private String parseBeacon(DatagramPacket packet) {
         if (packet.getLength() < 52) return null;
         ByteBuffer data = ByteBuffer.wrap(packet.getData(), packet.getOffset(), packet.getLength())
-                .order(ByteOrder.LITTLE_ENDIAN);
+                .slice().order(ByteOrder.LITTLE_ENDIAN);
         if (data.getInt(0) != PROTOCOL_MAGIC || (data.getShort(4) & 0xffff) != PROTOCOL_VERSION
                 || (data.get(6) & 0xff) != DISCOVERY_RESPONSE) return null;
         int port = data.getShort(12) & 0xffff;
