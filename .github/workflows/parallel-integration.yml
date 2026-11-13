@@ -1,0 +1,229 @@
+name: Universal Parallel Integration Matrix
+
+on:
+  workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+# Twelve independent lanes start together where GitHub-hosted runner capacity permits.
+# No lane depends on another; a failure is reported without cancelling its siblings.
+jobs:
+  host-core-tests:
+    name: 1/10 Host core build and unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure, compile, and test
+        run: |
+          cmake -S . -B build-host -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-host --parallel 2
+          ctest --test-dir build-host --output-on-failure
+
+  ios-simulator-core:
+    name: 2/10 iOS Simulator ARM64 core
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app
+      - name: Build simulator core
+        run: |
+          cmake -S . -B build-ios-sim -G Xcode \
+            -DCMAKE_SYSTEM_NAME=iOS \
+            -DCMAKE_OSX_SYSROOT=iphonesimulator \
+            -DCMAKE_OSX_ARCHITECTURES=arm64
+          cmake --build build-ios-sim --config Release --target LibertyUniversalCore
+
+  ios-device-core:
+    name: 3/10 iPhoneOS ARM64 unsigned core
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app
+      - name: Build device core without signing
+        run: |
+          cmake -S . -B build-ios-device -G Xcode \
+            -DCMAKE_SYSTEM_NAME=iOS \
+            -DCMAKE_OSX_SYSROOT=iphoneos \
+            -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO \
+            -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO
+          cmake --build build-ios-device --config Release --target LibertyUniversalCore
+
+  theft4-source-audit:
+    name: 4/10 Theft4 iOS runtime source inventory
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: integration/theft4-ios-xhyn-multiplatform
+          fetch-depth: 1
+          submodules: false
+      - name: Initialize pinned runtime source
+        run: |
+          git submodule update --init runtime/theft4
+          cd runtime/theft4
+          test -s README.md
+          test -s CMakeLists.txt
+          test -s .gitmodules
+          THEFT4_SHA="$(git rev-parse HEAD)"
+          echo "Theft4 source SHA: $THEFT4_SHA"
+          echo "### Theft4 source pin" >> "$GITHUB_STEP_SUMMARY"
+          echo "$THEFT4_SHA" >> "$GITHUB_STEP_SUMMARY"
+          test "$THEFT4_SHA" = "88115fefad59cfcb62d17c0c9548a7a900c01a23"
+          grep -q "LIBERTY_RECOMP_IOS_CORE_ONLY" CMakeLists.txt
+          grep -q "THEFT4_BUILD_GAME_CODE" ios/CMakeLists.txt
+          grep -q "THEFT4_ENABLE_GAME_STARTUP" ios/CMakeLists.txt
+          test -s tools/setup_repo.py
+          test -d ios
+          test -d cmake
+
+  xhyn-android-source-audit:
+    name: 5/10 XHYN Android source inventory
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: OMPergo/XHYN-IV-recomp-multiplayer-1.0
+          ref: be597d42d12abb04a552fd87e3853028499ae835
+          fetch-depth: 1
+          submodules: false
+      - name: Verify Android source/build entry points
+        run: |
+          test -s README.md
+          test -s .gitmodules
+          git rev-parse HEAD
+          find . -maxdepth 3 \( -name settings.gradle -o -name settings.gradle.kts -o -name CMakeLists.txt \) -print | head -80
+
+  universal-source-inventory:
+    name: 6/10 Universal core source inventory
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify core and test source files
+        run: |
+          test -s CMakeLists.txt
+          for source in \
+            LibertyRecomp/universal_runtime.cpp \
+            LibertyRecomp/diagnostics/hardware_capability.cpp \
+            LibertyRecomp/diagnostics/performance_tiers.cpp \
+            LibertyRecomp/gpu/gpu_compatibility.cpp \
+            LibertyRecomp/network/authoritative_session.cpp \
+            installer/media_id_validator.cpp; do
+            test -s "$source" || { echo "Missing source: $source"; exit 1; }
+          done
+          find tests/unit -maxdepth 1 -type f -name '*.cpp' -print
+
+  multiplayer-core-tests:
+    name: 7/10 Multiplayer protocol/session unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and run session-focused tests
+        run: |
+          cmake -S . -B build-network -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-network --parallel 2 --target test_authoritative_session
+          ctest --test-dir build-network --output-on-failure -R AuthoritativeSessionTest
+
+  ios-artifact-boundary:
+    name: 8/10 iOS artifact truthfulness check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure current iOS workflow does not label a core library as an IPA
+        run: |
+          grep -q "Installable IPA: NO" .github/workflows/ios.yml
+          grep -q "Complete Theft4/LibertyRecomp game runtime: NOT INCLUDED" .github/workflows/ios.yml
+          grep -q "App bundle / UIKit launcher: NOT INCLUDED" .github/workflows/ios.yml
+
+  integration-plan-audit:
+    name: 9/10 Integration and signing plan consistency
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify documented gates and platform references
+        run: |
+          test -s docs/PLATFORM_INTEGRATION_PLAN.md
+          test -s docs/IOS_FREE_SIGNING_AND_PHONE_ONLY_PLAN.md
+          grep -q "Theft4" docs/PLATFORM_INTEGRATION_PLAN.md
+          grep -q "XHYN" docs/PLATFORM_INTEGRATION_PLAN.md
+          grep -q "multiplayer" docs/PLATFORM_INTEGRATION_PLAN.md
+          grep -q "Personal Team" docs/IOS_FREE_SIGNING_AND_PHONE_ONLY_PLAN.md
+          test -s docs/SOURCE_REVISION_AND_RUNTIME_AUDIT.md
+          test -s docs/RUNTIME_SOURCE_MANIFEST.md
+          grep -q "88115fefad59cfcb62d17c0c9548a7a900c01a23" docs/SOURCE_REVISION_AND_RUNTIME_AUDIT.md
+          grep -q "be597d42d12abb04a552fd87e3853028499ae835" docs/RUNTIME_SOURCE_MANIFEST.md
+
+  source-provenance-audit:
+    name: 10/10 Source provenance and repository hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check source attribution and accidental game payloads
+        run: |
+          grep -R -n -E "KoreanSeats1/Theft4|OMPergo/XHYN-IV-recomp-multiplayer-1.0" docs
+          if find . -type f \( -iname '*.xex' -o -iname 'common.rpf' -o -iname 'xbox360.rpf' -o -iname 'audio.rpf' \) -print -quit | grep -q .; then
+            echo "Unexpected GTA IV game payload found in repository checkout."
+            exit 1
+          fi
+
+
+  runtime-source-pin-integrity:
+    name: 11/12 Pinned runtime submodule integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: integration/theft4-ios-xhyn-multiplatform
+          fetch-depth: 1
+          submodules: false
+      - name: Verify exact source pointer and manifest
+        run: |
+          grep -q 'path = runtime/theft4' .gitmodules
+          grep -q 'url = https://github.com/KoreanSeats1/Theft4.git' .gitmodules
+          grep -q 'path = runtime/xhyn-android' .gitmodules
+          grep -q 'url = https://github.com/OMPergo/XHYN-IV-recomp-multiplayer-1.0.git' .gitmodules
+          git submodule update --init runtime/theft4
+          test "$(git -C runtime/theft4 rev-parse HEAD)" = "88115fefad59cfcb62d17c0c9548a7a900c01a23"
+          git submodule update --init runtime/xhyn-android
+          test "$(git -C runtime/xhyn-android rev-parse HEAD)" = "be597d42d12abb04a552fd87e3853028499ae835"
+          grep -q '88115fefad59cfcb62d17c0c9548a7a900c01a23' docs/RUNTIME_SOURCE_MANIFEST.md
+          grep -q 'be597d42d12abb04a552fd87e3853028499ae835' docs/RUNTIME_SOURCE_MANIFEST.md
+
+  runtime-bridge-configure:
+    name: 12/12 Universal runtime target configuration
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: integration/theft4-ios-xhyn-multiplatform
+          fetch-depth: 1
+          submodules: false
+      - name: Initialize both pinned runtime submodules
+        run: |
+          git submodule update --init runtime/theft4
+          git submodule update --init runtime/xhyn-android
+      - name: Configure Universal with runtime targets enabled
+        run: |
+          cmake -S . -B build-runtime-bridge \
+            -DUNIVERSAL_ENABLE_THEFT4_IOS_RUNTIME=ON \
+            -DUNIVERSAL_ENABLE_XHYN_ANDROID_RUNTIME=ON
+          cmake --build build-runtime-bridge --target help | grep -E 'universal_ios_(device|simulator)_runtime_core'
+          cmake --build build-runtime-bridge --target help | grep -E 'universal_android_arm64_(runtime|apk)'

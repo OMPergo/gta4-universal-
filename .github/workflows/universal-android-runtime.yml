@@ -1,0 +1,197 @@
+name: Universal Android Runtime APK
+
+on:
+  push:
+    branches: ["integration/**"]
+  workflow_dispatch:
+
+concurrency:
+  group: universal-android-runtime-v2-${{ github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  android-arm64-runtime-apk:
+    name: Optimized ARM64 runtime + installable Universal APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Checkout Universal project
+        uses: actions/checkout@v4
+        with:
+          ref: integration/theft4-ios-xhyn-multiplatform
+          fetch-depth: 1
+          submodules: false
+
+      - name: Initialize pinned Android runtime source
+        run: |
+          git submodule update --init runtime/xhyn-android
+          test "$(git -C runtime/xhyn-android rev-parse HEAD)" = "be597d42d12abb04a552fd87e3853028499ae835"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # Keep the alpha debug signature stable across CI runs so test APKs
+      # can update in place and preserve the device's shader/pipeline caches.
+      - name: Restore stable alpha debug signing key
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: gta4-universal-alpha-debug-keystore-v2
+          restore-keys: |
+            gta4-universal-alpha-debug-keystore-v1
+
+      - name: Ensure stable alpha debug signing key
+        run: |
+          mkdir -p "$HOME/.android"
+          if [ ! -f "$HOME/.android/debug.keystore" ]; then
+            keytool -genkeypair -v \
+              -keystore "$HOME/.android/debug.keystore" \
+              -storepass android \
+              -alias androiddebugkey \
+              -keypass android \
+              -dname "CN=Android Debug,O=GTA IV Universal,C=US" \
+              -keyalg RSA -keysize 2048 -validity 10000
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install host build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build zip unzip
+          cmake --version
+          ninja --version
+          python3 --version
+          java -version
+
+      - name: Set up Android SDK
+        id: android_sdk
+        uses: android-actions/setup-android@v3
+        with:
+          # The legacy SDK 'tools' package has been removed upstream.
+          packages: 'platform-tools'
+
+      - name: Install pinned Android SDK and NDK
+        run: |
+          sdkmanager 'platform-tools' 'platforms;android-35' 'build-tools;35.0.0' 'ndk;29.0.14206865'
+          echo "ANDROID_NDK=$ANDROID_HOME/ndk/29.0.14206865" >> "$GITHUB_ENV"
+          echo "NDK_VER=29.0.14206865" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK=$ANDROID_HOME/ndk/29.0.14206865"
+
+      - name: Initialize all pinned native runtime dependencies
+        working-directory: runtime/xhyn-android
+        run: git submodule update --init --recursive --jobs 4
+
+      - name: Configure Universal Android build targets
+        run: |
+          cmake -S . -B build-android-runtime -G Ninja \
+            -DUNIVERSAL_ENABLE_XHYN_ANDROID_RUNTIME=ON
+
+      - name: Build optimized native runtime, Vulkan bridge, and APK variants
+        run: |
+          cmake --build build-android-runtime \
+            --target universal_android_arm64_apk --parallel 2
+
+      - name: Verify installable debug APK and release package
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP=runtime/xhyn-android/os/android/app/build/outputs/apk
+          DEBUG_APK="$APP/debug/app-debug.apk"
+          RELEASE_APK="$APP/release/app-release-unsigned.apk"
+          test -s "$DEBUG_APK"
+          test -s "$RELEASE_APK"
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          "$AAPT" dump badging "$DEBUG_APK" | tee android-package.txt
+          grep -q "package: name='com.ompergo.gta4universal'" android-package.txt
+          grep -q "application-label:'GTA IV Universal'" android-package.txt
+          "$APKSIGNER" verify --verbose "$DEBUG_APK"
+          for lib in libmain.so librexruntime.so libSDL3.so libc++_shared.so libvulkan.so libmain_hook.so libhook_impl.so libc11_threads_compat.so; do
+            unzip -Z1 "$DEBUG_APK" | grep -Fx "lib/arm64-v8a/$lib"
+          done
+          unzip -Z1 "$DEBUG_APK" | grep -E '^lib/arm64-v8a/librexgpu-.*\.so$'
+          sha256sum "$DEBUG_APK" "$RELEASE_APK" | tee android-apk-sha256.txt
+          stat -c 'Debug APK size: %s bytes' "$DEBUG_APK"
+          stat -c 'Release APK size: %s bytes' "$RELEASE_APK"
+          {
+            echo "## Android ARM64 APK"
+            echo "- App ID: com.ompergo.gta4universal"
+            echo "- Android min SDK: 29 (Android 10)"
+            echo "- Android target SDK: 35"
+            echo "- ABI: arm64-v8a"
+            echo "- Native build: Release, stripped packaged libraries"
+            echo "- Device profile: automatic low-end defaults at <=6 GiB RAM or Mali-G57"
+            echo "- Renderer profile: FSR1 performance, 30 FPS cap, reduced reflections/draw distance, 2 queued frames, thermal guard"
+            echo "- Debug APK: signed with the standard Android debug key; intended for direct device installation"
+            echo "- Release APK: unsigned; requires a release signing key before distribution"
+            echo "- User-owned GTA IV base game and TU8: not included"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Preserve native debug symbols separately
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p android-native-symbols
+          if [ -z "${ANDROID_NDK:-}" ]; then
+            echo "Android NDK was not installed; skipping native symbol extraction."
+            exit 0
+          fi
+          OBJCOPY="$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-objcopy"
+          if [ ! -x "$OBJCOPY" ]; then
+            echo "llvm-objcopy is unavailable; skipping native symbol extraction."
+            exit 0
+          fi
+          for so in \
+            runtime/xhyn-android/out/build/android-arm64-release/glue/gta4-recomp/libmain.so \
+            runtime/xhyn-android/out/build/android-arm64-release/glue/gta4-recomp/libliberty_install.so \
+            runtime/xhyn-android/glue/rexglue-sdk-main/out/linux-arm64/librexruntime.so \
+            runtime/xhyn-android/glue/rexglue-sdk-main/out/linux-arm64/libSDL3.so; do
+            if [ -s "$so" ]; then
+              "$OBJCOPY" --only-keep-debug "$so" "android-native-symbols/$(basename "$so").debug"
+            fi
+          done
+          find runtime/xhyn-android/glue/rexglue-sdk-main/out/linux-arm64 -maxdepth 1 -name 'librexgpu-*.so' -type f -print0 2>/dev/null | while IFS= read -r -d '' so; do
+            "$OBJCOPY" --only-keep-debug "$so" "android-native-symbols/$(basename "$so").debug"
+          done
+          if find android-native-symbols -type f -print -quit | grep -q .; then
+            (cd android-native-symbols && zip -q -r ../android-native-symbols.zip .)
+          fi
+
+      - name: Upload installable debug APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gta4-universal-android-arm64-debug-apk
+          path: |
+            runtime/xhyn-android/os/android/app/build/outputs/apk/debug/app-debug.apk
+            android-package.txt
+            android-apk-sha256.txt
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload unsigned release APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gta4-universal-android-arm64-release-unsigned
+          path: runtime/xhyn-android/os/android/app/build/outputs/apk/release/app-release-unsigned.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload native symbols for crash diagnosis
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gta4-universal-android-native-symbols
+          path: android-native-symbols.zip
+          if-no-files-found: ignore
+          retention-days: 7

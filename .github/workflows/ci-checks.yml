@@ -1,11 +1,7 @@
 name: CI Verification & Code Quality
 
 on:
-  push:
-    branches: [main, "jules-*"]
-  pull_request:
   workflow_dispatch:
-
 permissions:
   contents: read
 

@@ -1,10 +1,10 @@
 name: Windows x86-64 & ARM64 Build
 
 on:
-  push:
-    branches: [main, "jules-*"]
-  pull_request:
   workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -17,7 +17,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: false
 
       - name: Setup MSVC (x64)
         uses: ilammy/msvc-dev-cmd@v1
@@ -38,7 +38,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: false
 
       - name: Setup MSVC (ARM64 Cross)
         uses: ilammy/msvc-dev-cmd@v1
