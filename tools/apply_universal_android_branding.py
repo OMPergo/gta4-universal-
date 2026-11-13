@@ -34,7 +34,7 @@ manifest = "os/android/app/src/main/AndroidManifest.xml"
 replace_once(manifest, 'android:icon="@mipmap/ic_launcher"', 'android:icon="@drawable/app_icon"')
 replace_once(manifest, 'android:roundIcon="@mipmap/ic_launcher_round"', 'android:roundIcon="@drawable/app_icon"')
 gradle = "os/android/app/build.gradle.kts"
-replace_once(gradle, 'versionCode = 1\n        versionName   = "0.1.0-universal-lowend-alpha"',
+replace_once(gradle, 'versionCode = 10001\n        versionName   = "1.0-alpha.1"',
              'versionCode = 41\n        versionName   = "0.5.9.4-universal-alpha"')
 replace_once(launcher, 'Uri.parse("https://github.com/vaduur/LibertyRecompAndroid")',
              'Uri.parse("https://github.com/OMPergo/gta4-universal-")')
@@ -54,4 +54,4 @@ if not (root / "os/android/app/src/main/res/drawable-nodpi/app_icon.png").is_fil
     raise SystemExit("Universal launcher icon asset is missing")
 print("Applied GTA IV Universal title, pinned Liberty City artwork, custom app icon, and clean footer.")
 print("Removed upstream YouTube, Telegram, and GitHub footer links.")
-print("Set version 0.5.9.4-universal-alpha (versionCode 41).")
+print("Set version 1.0-alpha.1 (versionCode 10001).")
