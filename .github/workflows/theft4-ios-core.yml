@@ -21,7 +21,7 @@ jobs:
       - name: Checkout Universal shared project
         uses: actions/checkout@v4
         with:
-          ref: integration/theft4-ios-xhyn-multiplatform
+          ref: ${{ github.ref }}
           fetch-depth: 1
           submodules: false
 
@@ -99,7 +99,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: gta4-universal-ios-arm64-unsigned-ipa
+          name: gta4-universal-1.0-alpha.1-ios-arm64-unsigned-ipa
           path: |
             ${{ runner.temp }}/GTA-IV-Universal-ios-arm64-unsigned.ipa
             ${{ runner.temp }}/ios-ipa-sha256.txt
