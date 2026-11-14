@@ -7,7 +7,7 @@ This file tracks the Android release-candidate work. It is not a claim that mult
 ## Source-of-truth repositories
 
 - Universal host: this repository.
-- Android runtime submodule: `runtime/xhyn-android`, pinned at `9b065d31b7c6b6ffe64257f19db9ec9bb6068f40`.
+- Android runtime submodule: `runtime/xhyn-android`, pinned at `37141640f87c6fe2ace57aa29bf5084ea2a14e0d`.
 - The Android APK workflow explicitly checks out that pinned submodule revision. Changes to the runtime must therefore be made in the runtime repository and then consumed by updating the submodule gitlink in this repository.
 
 ## Required implementation
