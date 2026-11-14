@@ -44,7 +44,7 @@ jobs:
       - name: Initialize pinned Android runtime source
         run: |
           git submodule update --init runtime/xhyn-android
-          test "$(git -C runtime/xhyn-android rev-parse HEAD)" = "be597d42d12abb04a552fd87e3853028499ae835"
+          test "$(git -C runtime/xhyn-android rev-parse HEAD)" = "9b065d31b7c6b6ffe64257f19db9ec9bb6068f40"
 
       - uses: actions/setup-java@v4
         with:
