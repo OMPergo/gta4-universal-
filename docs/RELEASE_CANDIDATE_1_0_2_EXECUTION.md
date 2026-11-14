@@ -7,7 +7,7 @@ This file tracks the Android release-candidate work. It is not a claim that mult
 ## Source-of-truth repositories
 
 - Universal host: this repository.
-- Android runtime submodule: `runtime/xhyn-android`, pinned at `37141640f87c6fe2ace57aa29bf5084ea2a14e0d`.
+- Android runtime submodule: `runtime/xhyn-android`, pinned at `22fddd89e4c383409d3a5d7a901961e42ee4965c`.
 - The Android APK workflow explicitly checks out that pinned submodule revision. Changes to the runtime must therefore be made in the runtime repository and then consumed by updating the submodule gitlink in this repository.
 
 ## Required implementation
@@ -18,7 +18,8 @@ This file tracks the Android release-candidate work. It is not a claim that mult
 - Verify peer transport initialization and that gameplay datagrams reach the retail multiplayer hooks.
 - Verify player/entity/vehicle/event synchronization and host migration behavior actually work; do not infer this from hook presence or documentation.
 - Add an explicit capability/status surface for unavailable services. No fake sessions or placeholder success states.
-- Android pause menu now exposes live LAN backend readiness, active session ID, and network port. Community/internet matchmaking remains unavailable in the Android build; this UI reports that limitation instead of claiming it works.
+- Android pause menu now exposes live LAN backend readiness, active session ID, discovery port, and gameplay network port. Community/internet matchmaking remains unavailable in the Android build; this UI reports that limitation instead of claiming it works.
+- In-game Performance settings include a reversible Galaxy A14 low-load test preset. It is opt-in and does not overwrite existing settings unless selected and saved.
 
 ### Mobile in-game integration
 - Put multiplayer actions in the retail in-game phone flow, not only in a launcher Activity.
