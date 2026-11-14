@@ -18,6 +18,7 @@ set(LIBERTY_CORE_SOURCES
     LibertyRecomp/universal_runtime.cpp
     LibertyRecomp/diagnostics/hardware_capability.cpp
     LibertyRecomp/diagnostics/performance_tiers.cpp
+    LibertyRecomp/diagnostics/resource_budget.cpp
     LibertyRecomp/gpu/gpu_compatibility.cpp
     LibertyRecomp/network/authoritative_session.cpp
     installer/media_id_validator.cpp
@@ -54,6 +55,10 @@ add_test(NAME HardwareCapabilityTest COMMAND test_hardware_capability)
 add_executable(test_performance_tiers tests/unit/test_performance_tiers.cpp)
 target_link_libraries(test_performance_tiers PRIVATE LibertyUniversalCore)
 add_test(NAME PerformanceTiersTest COMMAND test_performance_tiers)
+
+add_executable(test_resource_budget tests/unit/test_resource_budget.cpp)
+target_link_libraries(test_resource_budget PRIVATE LibertyUniversalCore)
+add_test(NAME ResourceBudgetTest COMMAND test_resource_budget)
 
 add_executable(test_gpu_compatibility tests/unit/test_gpu_compatibility.cpp)
 target_link_libraries(test_gpu_compatibility PRIVATE LibertyUniversalCore)

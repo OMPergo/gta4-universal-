@@ -15,6 +15,8 @@ struct GraphicsQualitySettings {
 
   // Resource budgets
   uint64_t texture_memory_budget_bytes = 512 * 1024 * 1024;
+  uint64_t streaming_cache_budget_bytes = 192 * 1024 * 1024;
+  uint64_t decode_scratch_budget_bytes = 96 * 1024 * 1024;
   uint32_t texture_quality = 1; // 0 = Low, 1 = Medium, 2 = High
 
   // World and rendering density

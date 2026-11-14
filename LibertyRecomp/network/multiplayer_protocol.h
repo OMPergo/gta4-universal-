@@ -9,6 +9,8 @@ namespace LibertyRecomp::Network {
 
 constexpr uint32_t kUniversalProtocolMagic = 0x4C43554D; // "LCUM" (Liberty City Universal Multiplayer)
 constexpr uint16_t kUniversalProtocolVersion = 1;
+// UDP port used by the Android launcher LAN discovery probe and compatible hosts.
+constexpr uint16_t kUniversalDiscoveryPort = 27888;
 
 enum class PacketType : uint8_t {
   DiscoveryBeacon = 1,
