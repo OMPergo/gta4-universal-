@@ -35,7 +35,7 @@ def replace_once(path: str, old: str, new: str) -> None:
 replace_once(
     "glue/rexglue-sdk-main/gta4-recomp/src/android/android_platform_stubs.cpp",
     "#include <cstdlib>\n#include <jni.h>",
-    "#include <cstdlib>\n#include <iomanip>\n#include <sstream>\n#include <jni.h>",
+    "#include <cstdlib>\n#include <iomanip>\n#include <sstream>\n#include <rex/runtime.h>\n#include <jni.h>",
 )
 replace_once(
     "glue/rexglue-sdk-main/gta4-recomp/src/android/android_platform_stubs.cpp",
