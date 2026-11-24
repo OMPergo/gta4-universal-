@@ -127,7 +127,7 @@ replace_once(
 # Live multiplayer status tab. Host/join remains the retail game's phone flow.
 replace_once(
     "os/android/app/src/main/java/com/libertyrecomp/SessionMenuUi.java",
-    """   List<Button> buttons=new ArrayList<>();String[] names={"Session","Touch controls","Controller","Diagnostics"},icons={"info","touch","controls","diagnostics"};
+    """  List<Button> buttons=new ArrayList<>();String[] names={"Session","Touch controls","Controller","Diagnostics"},icons={"info","touch","controls","diagnostics"};
    final java.util.function.Consumer<String> change=name->{state.scroll.put(state.tab,scroll.getScrollY());state.tab=name;content.removeAllViews();for(int n=0;n<buttons.size();n++)ModernUi.selected(buttons.get(n),names[n].equals(name));
     String[] keys=name.equals("Touch controls")?new String[]{"Edit mobile controls","Control settings"}:name.equals("Controller")?new String[]{"Controller settings","Edit Xbox controls"}:name.equals("Diagnostics")?new String[]{"Input test (30 seconds)","Capture renderer timings","Capture shadow issue","Share report"}:new String[]{"Achievements","Cheats","Settings"};""",
     """   List<Button> buttons=new ArrayList<>();final TextView[] multiplayerDetails={null};String[] names={"Session","Multiplayer","Touch controls","Controller","Diagnostics"},icons={"info","info","touch","controls","diagnostics"};
@@ -142,7 +142,7 @@ replace_once(
 )
 replace_once(
     "os/android/app/src/main/java/com/libertyrecomp/SessionMenuUi.java",
-    """  private SessionMenuUi(){}""",
+    """ private SessionMenuUi(){}""",
     """  private static String multiplayerSummary(String raw){
    try{
     JSONObject status=new JSONObject(raw);
