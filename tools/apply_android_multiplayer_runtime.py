@@ -96,30 +96,21 @@ replace_once(
 replace_once(
     "os/android/app/src/main/java/com/libertyrecomp/MobileSettingsUi.java",
     """            if(selected[0].equals("Performance")&&query.isEmpty())ModernUi.gridAction(a,rows,"Balanced settings",()->{draft.put("android_gpu_turbo","false");draft.put("android_thermal_guard","true");draft.put("ui_battery_refresh","true");if(sustainedSupported(a))draft.put("ui_sustained","true");draft.put("audio_low_latency","false");updatePending.run();render[0].run();});""",
-    """            if(selected[0].equals("Performance")&&query.isEmpty())ModernUi.gridAction(a,rows,"Balanced settings",()->{draft.put("android_gpu_turbo","false");draft.put("android_thermal_guard","true");draft.put("ui_battery_refresh","true");if(sustainedSupported(a))draft.put("ui_sustained","true");draft.put("audio_low_latency","false");updatePending.run();render[0].run();});
+    """            if(selected[0].equals("Performance")&&query.isEmpty())ModernUi.gridAction(a,rows,"Balanced settings",()->{draft.put("android_thermal_guard","true");draft.put("audio_adaptive_buffer","true");updatePending.run();render[0].run();});
             if(selected[0].equals("Performance")&&query.isEmpty())ModernUi.gridAction(a,rows,"Galaxy A14 low-load test profile",()->{
-                draft.put("resolution","540p");
-                draft.put("gta4_native_upscaler","native");
+                // Only stage keys explicitly accepted by the pinned JNI settings allowlist.
                 draft.put("gta4_frame_limit","30");
                 draft.put("gta4_dynamic_draw_distance","true");
                 draft.put("gta4_draw_distance_scale","0.60");
-                draft.put("gta4_shadow_map_base_size","256");
                 draft.put("gta4_native_shadow_interval","0");
-                draft.put("gta4_reflection_resolution","quarter");
-                draft.put("gta4_water_reflection_resolution","quarter");
-                draft.put("gta4_mirror_reflection_resolution","quarter");
-                draft.put("gta4_reflection_aa","off");
                 draft.put("gta4_reflection_capture_distance","near");
                 draft.put("gta4_native_water_reflection_interval","2");
                 draft.put("gta4_native_environment_reflection_interval","2");
                 draft.put("gta4_motion_blur","false");
-                draft.put("gta4_native_max_queued_frames","2");
                 draft.put("audio_adaptive_buffer","true");
-                draft.put("audio_low_latency","false");
                 draft.put("android_thermal_guard","true");
-                draft.put("ui_battery_refresh","true");
                 helpTitle.setText("GALAXY A14 LOW-LOAD TEST PROFILE");
-                helpText.setText("Stages 540p output, a 30 FPS cap, reduced draw distance, shadows and reflections, two queued frames, adaptive audio buffering, and thermal protection. This is a reversible test preset, not a guarantee of a target frame rate. Press Save to apply it; settings marked restart take effect on the next launch.");
+                helpText.setText("Stages a 30 FPS cap, adaptive draw distance at 0.60, disabled sun-shadow updates, near reflection capture, less frequent reflection updates, reduced motion blur, adaptive audio buffering, and thermal protection. This preset only uses settings supported by this pinned Android runtime. It is reversible and does not guarantee a target frame rate. Press Save to apply it.");
                 updatePending.run();render[0].run();
             });""",
 )
@@ -127,7 +118,7 @@ replace_once(
 # Live multiplayer status tab. Host/join remains the retail game's phone flow.
 replace_once(
     "os/android/app/src/main/java/com/libertyrecomp/SessionMenuUi.java",
-    """   List<Button> buttons=new ArrayList<>();String[] names={"Session","Touch controls","Controller","Diagnostics"},icons={"info","touch","controls","diagnostics"};
+    """  List<Button> buttons=new ArrayList<>();String[] names={"Session","Touch controls","Controller","Diagnostics"},icons={"info","touch","controls","diagnostics"};
    final java.util.function.Consumer<String> change=name->{state.scroll.put(state.tab,scroll.getScrollY());state.tab=name;content.removeAllViews();for(int n=0;n<buttons.size();n++)ModernUi.selected(buttons.get(n),names[n].equals(name));
     String[] keys=name.equals("Touch controls")?new String[]{"Edit mobile controls","Control settings"}:name.equals("Controller")?new String[]{"Controller settings","Edit Xbox controls"}:name.equals("Diagnostics")?new String[]{"Input test (30 seconds)","Capture renderer timings","Capture shadow issue","Share report"}:new String[]{"Achievements","Cheats","Settings"};""",
     """   List<Button> buttons=new ArrayList<>();final TextView[] multiplayerDetails={null};String[] names={"Session","Multiplayer","Touch controls","Controller","Diagnostics"},icons={"info","info","touch","controls","diagnostics"};
@@ -142,7 +133,7 @@ replace_once(
 )
 replace_once(
     "os/android/app/src/main/java/com/libertyrecomp/SessionMenuUi.java",
-    """  private SessionMenuUi(){}""",
+    """ private SessionMenuUi(){}""",
     """  private static String multiplayerSummary(String raw){
    try{
     JSONObject status=new JSONObject(raw);
