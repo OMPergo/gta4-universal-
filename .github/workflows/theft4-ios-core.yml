@@ -1,6 +1,10 @@
 name: GTA IV Universal iOS App Build
 
 on:
+  push:
+    branches: ["integration/**"]
+  pull_request:
+    branches: ["integration/**"]
   workflow_dispatch:
 
 concurrency:
@@ -12,7 +16,7 @@ permissions:
 
 jobs:
   ios-device-app:
-    name: Build unsigned iPhoneOS ARM64 app with AOT game runtime
+    name: Build unsigned iPhoneOS ARM64 core app with AOT/headless validation
     runs-on: macos-15
     timeout-minutes: 180
     steps:
@@ -49,7 +53,11 @@ jobs:
         working-directory: runtime/theft4
         run: python3 tools/setup_repo.py
 
-      - name: Configure full iOS app and AOT runtime
+      - name: Apply iOS 16-compatible ReXGlue float parser patch
+        working-directory: runtime/theft4
+        run: python3 "$GITHUB_WORKSPACE/tools/apply_ios16_float_parser_compat.py" .
+
+      - name: Configure iOS core app and AOT runtime validation
         working-directory: runtime/theft4
         run: |
           cmake --preset ios-device-release \
@@ -92,6 +100,7 @@ jobs:
             echo "## GTA IV Universal iOS build"
             echo "- Runtime source: Theft4 pinned at 88115fefad59cfcb62d17c0c9548a7a900c01a23"
             echo "- Generated GTA IV AOT game code: enabled"
+            echo "- Build scope: core-only/headless HLE validation; full graphics renderer is not included in this milestone gate"
             echo "- Headless HLE startup path: enabled"
             echo "- Bundle identity: com.ompergo.gta4universal"
             echo "- Signing: none; IPA is unsigned"
