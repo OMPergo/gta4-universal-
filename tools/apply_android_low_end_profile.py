@@ -26,7 +26,7 @@ def replace_once(path: str, old: str, new: str) -> None:
 # an exact whitespace-sensitive literal.
 mobile_file = root / "os/android/app/src/main/java/com/libertyrecomp/MobileConfig.java"
 mobile_source = mobile_file.read_text(encoding="utf-8")
-mobile_pattern = r"(?m)^    static void ensureDefaults\(File file\)throwsIOException \{[^\n]*\}$"
+mobile_pattern = r"(?m)^    static void ensureDefaults\(File file\)throws\s+IOException \{[^\n]*\}$"
 mobile_new = """    static void ensureDefaults(File file)throws IOException {Map<String,String> saved=read(file),missing=new LinkedHashMap<>();for(Map.Entry<String,String> e:DEFAULTS.entrySet())if(!saved.containsKey(e.getKey()))missing.put(e.getKey(),e.getValue());if(!missing.isEmpty())update(file,missing);}
     private static final Map<String,String> LOW_END_DEFAULTS=Collections.unmodifiableMap(new LinkedHashMap<String,String>(){{
         put("gta4_frame_limit","30");
