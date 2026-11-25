@@ -60,7 +60,10 @@ jobs:
       - name: Configure iOS core app and AOT runtime validation
         working-directory: runtime/theft4
         run: |
+          VULKAN_HEADERS="$PWD/glue/rexglue-sdk-main/thirdparty/vulkan-headers/include"
+          test -s "$VULKAN_HEADERS/vulkan/vulkan.h"
           cmake --preset ios-device-release \
+            -DCMAKE_CXX_FLAGS="-I$VULKAN_HEADERS" \
             -DLIBERTY_RECOMP_IOS_CORE_ONLY=ON \
             -DLIBERTY_RECOMP_EMBEDDED_ASSETS=OFF \
             -DTHEFT4_PUBLIC_BUILD=ON \
