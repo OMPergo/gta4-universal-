@@ -13,12 +13,17 @@ This file records the exact source revisions used by GTA IV Universal. Update it
 ## Android runtime source
 
 - Repository: https://github.com/OMPergo/XHYN-IV-recomp-multiplayer-1.0
-- Pinned audit commit: `be597d42d12abb04a552fd87e3853028499ae835`\n- Universal-owned Android integration overlay: `tools/apply_android_multiplayer_runtime.py` (JNI live multiplayer status, in-game Multiplayer status tab, and opt-in Galaxy A14 low-load preset). These changes are applied during the Universal build and do not require a separate runtime-repository PR.
+- Pinned audit commit: `be597d42d12abb04a552fd87e3853028499ae835`
+- Universal-owned Android integration overlay: `tools/apply_android_multiplayer_runtime.py` (JNI live multiplayer status, in-game Multiplayer status tab, and opt-in Galaxy A14 low-load preset). These changes are applied during the Universal build and do not require a separate runtime-repository PR.
 - Path in this repository: `runtime/xhyn-android` (Git submodule)
 - Role: ARM64 Android runtime and native APK source, including installer, SDL/input, touch controls, GPU/driver and performance implementation.
 - Build gate: Universal's opt-in Android native-runtime and debug-APK targets. The APK is unsigned and requires the user's legally obtained game files/TU8 to be installed separately.
 
-## Repository ownership boundary\n\nGTA IV Universal is the project repository for all milestone implementation, integration patches, CI, documentation, and releases. The Android runtime submodule is retained only as the pinned upstream engine/source dependency; do not use its experimental PR as the project integration target. Port Android-facing changes into Universal-owned tools and build steps.\n\n## Shared project status
+## Repository ownership boundary
+
+GTA IV Universal is the project repository for all milestone implementation, integration patches, CI, documentation, and releases. The Android runtime submodule is retained only as the pinned upstream engine/source dependency; do not use its experimental PR as the project integration target. Port Android-facing changes into Universal-owned tools and build steps.
+
+## Shared project status
 
 - Universal diagnostics/performance/GPU/session core remains at the repository root.
 - The iOS and Android platform runtime sources are both present as separately pinned submodules, each with an opt-in build path.
