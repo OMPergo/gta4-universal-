@@ -22,11 +22,11 @@ def replace_once(path: str, old: str, new: str) -> None:
         raise SystemExit(f"Expected exactly one patch anchor in {path}; found {source.count(old)}")
     file.write_text(source.replace(old, new), encoding="utf-8")
 
-# Replace the compact upstream method by matching its full source line. The
-# previous literal anchor was brittle across whitespace-only upstream changes.
+# Match the compact upstream method as a complete line rather than relying on
+# an exact whitespace-sensitive literal.
 mobile_file = root / "os/android/app/src/main/java/com/libertyrecomp/MobileConfig.java"
 mobile_source = mobile_file.read_text(encoding="utf-8")
-mobile_pattern = r"(?m)^    static void ensureDefaults\\(File file\\)throwsIOException \\{[^\\n]*\\}$"
+mobile_pattern = r"(?m)^    static void ensureDefaults\(File file\)throwsIOException \{[^\n]*\}$"
 mobile_new = """    static void ensureDefaults(File file)throws IOException {Map<String,String> saved=read(file),missing=new LinkedHashMap<>();for(Map.Entry<String,String> e:DEFAULTS.entrySet())if(!saved.containsKey(e.getKey()))missing.put(e.getKey(),e.getValue());if(!missing.isEmpty())update(file,missing);}
     private static final Map<String,String> LOW_END_DEFAULTS=Collections.unmodifiableMap(new LinkedHashMap<String,String>(){{
         put("gta4_frame_limit","30");
@@ -73,8 +73,8 @@ replace_once(
 replace_once("os/android/app/build.gradle.kts", 'applicationId = "com.xhyn.ivrecomp"', 'applicationId = "com.ompergo.gta4universal"')
 replace_once(
     "os/android/app/build.gradle.kts",
-    'versionCode = 40\\n        versionName   = "0.5.9.3-xhyn-r2-test12"',
-    'versionCode = 1\\n        versionName   = "0.1.0-universal-lowend-alpha"'
+    'versionCode = 40\n        versionName   = "0.5.9.3-xhyn-r2-test12"',
+    'versionCode = 1\n        versionName   = "0.1.0-universal-lowend-alpha"'
 )
 replace_once("os/android/app/src/main/res/values/strings.xml", '<string name="app_name">XHYN IV</string>', '<string name="app_name">GTA IV Universal</string>')
 print("Applied Universal low-end defaults using only the pinned JNI settings allowlist.")
